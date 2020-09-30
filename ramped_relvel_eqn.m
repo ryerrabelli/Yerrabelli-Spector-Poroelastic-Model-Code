@@ -2,13 +2,13 @@
 % Made by Rahul Yerrabelli for Dr. Alexander Spector's lab at Johns Hopkins
 % University, Department of Biomedical Engineering. 2017-2020.
 % To contact authors, reach out to aspector@jhu.edu for Dr. Spector and
-% ryerrab1@alumni.jh.edu or ryerrabelli@gmail.com for Rahul.
+% ryerrab1@alumni.jh.edu or rsy2@illinois.edu for Rahul.
 
 % DESCRIPTION
 % 1) Under the condition of ramped applied strain (strain that increases
 % linearly until time t0 and then is constant afterwards)
-% 2) Returns a dimensionalized value for fluid velocity divided by e0 and
-% divided by r, i.e. v^f_r/(e0 * r)
+% 2) Returns a dimensionalized value for relative velocity divided by e0 and
+% divided by r, i.e. v^rel/(e0 * r)
 % NOTE: The equation was not reconfirmed while adding this extra comment
 % text (which was originally done Jun 22nd, 2019)
 

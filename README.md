@@ -7,3 +7,5 @@ To contact authors, email us at "aspector at jhu dot edu" for Dr. Spector and
 (replace "at" with "@" and "dot" with ."; this was done to prevent spam).
 
 Code created and tested on MATLAB® 2017a for Mac.
+
+![Email addresses as an image to prevent spam](email-address-image.gif "Email Addresses as Image")

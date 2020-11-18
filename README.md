@@ -11,6 +11,7 @@ Code was created by [Rahul S. Yerrabelli](https://orcid.org/0000-0002-7670-9601)
 )<sup>1</sup>.  
  1. [Johns Hopkins University, Department of Biomedical Engineering, Baltimore, MD, USA](https://www.bme.jhu.edu/)  
  1. [Carle Illinois College of Medicine, University of Illinois at Urbana-Champaign, Urbana, IL, USA](https://medicine.illinois.edu/).  
+
 ![Email addresses as an image to prevent spam](email-address-image.png "Email Addresses as Image")
 
 
@@ -27,13 +28,13 @@ Code was created by [Rahul S. Yerrabelli](https://orcid.org/0000-0002-7670-9601)
 ## Instructions for Understanding the Model's MATLAB® Code  
 * Each of the major mechanical functions (specifically displacement, fluid velocity, pressure, and radial strain) are represented as separate .m files. Different files are also used for the parameters under ramped (increasing at a constant rate, then staying at a max) and harmonic (sinusoidal) strain conditions.
   * Ramped strain functions (Used in **Figure 3**, **Figure 4**, and **Figure 5** of the manuscript)
-    * **[ramped_displ_eqn.m](ramped_displ_eqn.m)**
-    * **[ramped_fluidvel_eqn.m](ramped_fluidvel_eqn.m)**
-    * **[ramped_press_eqn.m](ramped_press_eqn.m)**
-    * **[ramped_radialstrain_eqn.m](ramped_radialstrain_eqn.m)**
-    * A separate solid velocity (velocity) function was not created as it can just be calculated as the numerical derivative of displacement.
-    * **[ramped_relvel_eqn.m](ramped_relvel_eqn.m)** <- This file is not truly necessary as it can be calculated from fluid velocity and solid velocity (itself calculable from displacement).
-    * **[ramped_force_eqn.m](ramped_force_eqn.m)** <- The force function under ramped strain has already been well described for decades in prior literature, and thus was not a focus of our studies. It is included only for completion.
+    * Displacement: **[ramped_displ_eqn.m](ramped_displ_eqn.m)**
+    * Fluid velocity: **[ramped_fluidvel_eqn.m](ramped_fluidvel_eqn.m)**
+    * Pressure: **[ramped_press_eqn.m](ramped_press_eqn.m)**
+    * Radial strain: **[ramped_radialstrain_eqn.m](ramped_radialstrain_eqn.m)**
+    * Solid velocity: A separate solid velocity (velocity) function was not created as it can just be calculated as the numerical derivative of displacement.
+    * Relative velocity: **[ramped_relvel_eqn.m](ramped_relvel_eqn.m)** <- This file is not truly necessary as it can be calculated from fluid velocity and solid velocity (itself calculable from displacement).
+    * Force: **[ramped_force_eqn.m](ramped_force_eqn.m)** <- The force function under ramped strain has already been well described for decades in prior literature, and thus was not a focus of our studies. It is included only for completion.
   * Harmonic functions (Used in **Figure 6** of the manuscript)
     * **[harmonic_displ_eqn2.m](harmonic_displ_eqn2.m)**
     * **[harmonic_fluidvel_eqn2.m](harmonic_fluidvel_eqn2.m)**
@@ -43,7 +44,7 @@ Code was created by [Rahul S. Yerrabelli](https://orcid.org/0000-0002-7670-9601)
     * A separate relative velocity function was not created as it can simply be calculated from fluid velocity - d/dt(displacement) as shown in main.mlx
     * A force function under harmonic strain was not created.
 * The **[main.mlx](main.mlx)** file runs the above equations under various conditions (time, radial position, etc) and plots them. Many of the analyses runs and followup plotting take several minutes to run.
-* The main.mlx file also has the representation of the various strains we tested (represented in **Figure 2**).
+* The **[main.mlx](main.mlx)** file also has the representation of the various strains we tested (represented in **Figure 2**).
 * In our manuscript, we studied cyclic strains in both the non-harmonic and harmonic cases. Ramped strain of course is not cyclic in it of itself; it represents strain increases from 0 at a constant rate until it reaches a  max, at which point the strain stays at that high level. Thus, the ramped functions only represent one of the components of a non-harmonic cycle of strain. Each one can be run multiple times and added or subtracted (with a time offset) to reach the various non-harmonic cyclic strains represented in **Figure 2A-C** and the consequent non-harmonic cyclic functions represented in **Figure 3, Figure 4, and Figure 5** of the manuscript.
 
 

@@ -1,7 +1,9 @@
 #!/bin/sh
 
-echo Saving email addresses
+SAVETOFILENAME=email-address-image.png
 
-echo "Rahul Yerrabelli: \n ryerrab1@alumni.jh.edu \n rsy2@illinois.edu \n\nAlexander Spector: \n aspector@jhu.edu" | convert -background none -density 196 -resample 72 -unsharp 0x.5 -font "Courier" text:- -trim +repage -bordercolor white -border 0 email-address-image.gif
+echo Saving email addresses as an image. May take a second.
 
-echo Done
+echo "Rahul Yerrabelli: \n  ryerrab1@alumni.jh.edu \n  rsy2@illinois.edu \n\nAlexander Spector: \n  aspector@jhu.edu" | convert -background none -density 400 -resample 300 -unsharp 0x.5 -font "arial" text:- -trim +repage -bordercolor white -border 0 $SAVETOFILENAME
+
+echo Done. Saved to file name $SAVETOFILENAME.

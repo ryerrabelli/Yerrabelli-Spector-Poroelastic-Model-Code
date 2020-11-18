@@ -2,9 +2,6 @@
  
 **NOTE: For the most updated version of this document and all associated code and files, see: https://github.com/ryerrabelli/Yerrabelli-Spector-Poroelastic-Model-Code**
 
-![Email addresses as an image to prevent spam](email-address-image.png "Email Addresses as Image")
-
-
 # Pharmacokinetic Modeling and Optimization of Omburtamab (8H9) Delivered Through the CSF  
 
 **NOTE: For the most updated version of this document and all associated code and files, see: https://github.com/ryerrabelli/8H9-Model-Essentials-Public**
@@ -12,8 +9,9 @@
 ## Contact  
 Code was created by [Rahul S. Yerrabelli](https://orcid.org/0000-0002-7670-9601)<sup>1,2</sup> in the lab of [Alexander A. Spector](https://orcid.org/0000-0003-0701-8185
 )<sup>1</sup>.  
- 1. [Johns Hopkins University, Department of Biomedical Engineering, Baltimore, MD, USA](https://www.mskcc.org/research-areas/labs/nai-kong-cheung)  
+ 1. [Johns Hopkins University, Department of Biomedical Engineering, Baltimore, MD, USA](https://www.bme.jhu.edu/)  
  1. [Carle Illinois College of Medicine, University of Illinois at Urbana-Champaign, Urbana, IL, USA](https://medicine.illinois.edu/).  
+![Email addresses as an image to prevent spam](email-address-image.png "Email Addresses as Image")
 
 
 

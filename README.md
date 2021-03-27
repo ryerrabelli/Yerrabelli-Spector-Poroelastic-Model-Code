@@ -3,17 +3,20 @@
 **NOTE: For the most updated version of this document and all associated code and files, see: https://github.com/ryerrabelli/Yerrabelli-Spector-Poroelastic-Model-Code**
 
 ## Contact  
-Code was created by [Rahul S. Yerrabelli](https://orcid.org/0000-0002-7670-9601)<sup>1,2</sup> in the lab of [Alexander A. Spector](https://orcid.org/0000-0003-0701-8185
-)<sup>1</sup>.  
+Code was created by [Rahul S. Yerrabelli](https://orcid.org/0000-0002-7670-9601)<sup>1,2,4</sup> in the research group of [Alexander A. Spector](https://orcid.org/0000-0003-0701-8185)<sup>3,4</sup>.  
  1. [Johns Hopkins University, Department of Biomedical Engineering, Baltimore, MD, USA](https://www.bme.jhu.edu/)  
  1. [Carle Illinois College of Medicine, University of Illinois at Urbana-Champaign, Urbana, IL, USA](https://medicine.illinois.edu/).  
+ 1. [Translational Tissue Engineering Center, Johns Hopkins University, Baltimore, MD, USA](https://ttec.johnshopkins.edu/).  
+ 1. [Whiting School of Engineering, Johns Hopkins University, Baltimore, MD 21205, USA](https://engineering.jhu.edu/).  
+ 
+Click on our names above to visit our ORCID pages and to find the most recent contact/affiliation info. The contact info at the time of publication is below:
 
 ![Email addresses as an image to prevent spam](email-address-image.png "Email Addresses as Image")
 
 
 
 ## Background  
-* The code here is what I used to create the analyses in our manuscript, which was accepted for publication on Nov 8, 2020 to [Medical & Biological Engineering & Computing (MBEC)](https://www.springer.com/journal/11517). The manuscript title is ["**IModeling the Mechanics of Fibrous-Porous Scaffolds for Skeletal Muscle Regeneration**" by Rahul S. Yerrabelli, Sarah M. Somers, Warren L. Grayson, and Alexander A. Spector.
+* The code here is what I used to create the analyses in our manuscript, which was accepted for publication on Nov 8, 2020 to [Medical & Biological Engineering & Computing (MBEC)](https://www.springer.com/journal/11517). The manuscript title is "**Modeling the Mechanics of Fibrous-Porous Scaffolds for Skeletal Muscle Regeneration**" by Rahul S. Yerrabelli, Sarah M. Somers, Warren L. Grayson, and Alexander A. Spector (doi:[10.1007/s11517-020-02288-5](https://dx.doi.org/10.1007/s11517-020-02288-5)).
 * The outputs of the mathematical derivations are represented in these files and subsequently plotted.
 * The modeling project spanned Sep 2017 - Nov 2020.  
 * All code is in MATLAB®.

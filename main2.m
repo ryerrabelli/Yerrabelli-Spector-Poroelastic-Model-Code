@@ -1,4 +1,4 @@
-% CREDITS
+%% CREDITS
 % Made by Rahul Yerrabelli for Dr. Alexander Spector's lab at Johns Hopkins
 % University, Department of Biomedical Engineering. 2021-.
 % To contact authors, reach out to aspector@jhu.edu for Dr. Spector and
@@ -13,7 +13,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-% NOTES FROM EMAIL CHAIN
+%% NOTES FROM EMAIL CHAIN
 % Email chain on Mar 28, 2021. 
 % Questions from Rahul, answers from Dr. Spector.
 %
@@ -79,16 +79,27 @@
 % ------------------------------------------------------------------------
 % 
 
+%% SETUP
 
 clear all;
 
+ln = @(x) log(x);  % ln (x) = natural log = log(x) in matlab/coding
+I0 = @(x) besseli(0,x);
+I1 = @(x) besseli(1,x);
+
+
+%% PARAMETERS
+
+%# Predefined constants
 eps0 = 0.1; % 10 percent
 strain_rate = 0.1; % 1 percent per s (normally 1%/s)
+%# Below are directly determined by the mesh deformation part of the 
+%# experiment (see our paper with Daniel).  -Dr. Spector
+Vrz = 1;
+Ezz = 1;
 
-ln = @(x) log(x);  % natural log
-
-% Parameters to be determined by exprimental fitting to the unknown
-% material
+%# Fitted parameters (to be determined by experimental fitting to 
+% the unknown material)
 tg=40.62; %in units of s   % for porosity_sp == 0.5
 Err = 1;
 % Not actually a v, but a greek nu used to represent Poisson's ratio
@@ -99,19 +110,13 @@ c = 1;
 %tau = [tau1 tau2];
 tau = [1 1];
 
-%# Below are not "fitted" parameters here, but they are predefined constants
-%# directly determined by the mesh deformation part of the experiment 
-%# (see our paper with Daniel).  -Dr. Spector
-Vrz = 1;
-Ezz = 1;
 
-
+%# Symbolics for Laplace
 syms s t
-% Test inversion
-F = 1/s^2+1/s;t
-ilaplace(F, s, t)  % Specifying s and t is not actually needed as those are the default
 
 
+
+%% BASE EQUATIONS
 %  1
 %eps0 = strain_rate * t0
 t0 = eps0/strain_rate;
@@ -144,7 +149,7 @@ f1      = @(Sij) -(2*Srz+Szz)/2 * 2*(Srr*Szz-Srz^2)/(alpha(Sij));
 f2      = @(c,tau) 1 + c*ln( (1+s*tau(2))/(1+s*tau(1)) );
 
 %  7
-% Note- Ehat is a function of Sij although not stated originally in the paper
+% Note- Ehat is a function of Sij although wasn't stated in Spector's notes
 Ehat    = @(Sij) -2*(Srr*Szz-Srz^2)/(alpha(Sij));
 
 
@@ -155,11 +160,27 @@ Ehat    = @(Sij) -2*(Srr*Szz-Srz^2)/(alpha(Sij));
 f       = tg * s/f2(c,tau);
 
 
+%% FINAL EQUATION
 % Laplace transform of the average axial stress
 % !!Confirm should be a function of Sij
 sigbar  = @(Sij) ...
-    2*epszz*(C13(Sij)*(g(Sij)) * besseli(1,sqrt(f)/sqrt(f))/(Ehat(Sij)*besseli(0,sqrt(f))-2*besseli(1,sqrt(f))/sqrt(f)) -1/2) ...
+    2*epszz*(...
+        C13(Sij)*(g(Sij)) ...
+        * besseli(1,sqrt(f)/sqrt(f)) ...
+        /(...
+            Ehat(Sij)*besseli(0,sqrt(f))...
+            -2*besseli(1,sqrt(f))/sqrt(f)...
+        ) ...
+        -1/2 ...
+    ) ...
     + C33(Sij)/2 ...
-    + f1(Sij)*f2(c,tau)*...
-        (besseli(0,sqrt(f))-2*besseli(1,sqrt(f))/sqrt(f))...
-        /(2*Ehat(Sij)*besseli(0,sqrt(f)) - besseli(1,sqrt(f)/sqrt(f)) );
+    + f1(Sij)*f2(c,tau)...
+    *(besseli(0,sqrt(f))-2*besseli(1,sqrt(f))/sqrt(f))...
+    /(2*Ehat(Sij)*besseli(0,sqrt(f)) - besseli(1,sqrt(f)/sqrt(f)) );
+
+
+%% Test inversion
+F = 1/s^2+1/s;t
+% Specifying s and t in ilaplace isn't actually needed as those 
+% are the default
+ilaplace(F, s, t)  

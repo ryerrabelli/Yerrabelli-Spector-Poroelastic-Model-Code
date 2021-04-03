@@ -96,20 +96,20 @@ eps0 = 0.1; % 10 percent
 strain_rate = 0.1; % 1 percent per s (normally 1%/s)
 %# Below are directly determined by the mesh deformation part of the 
 %# experiment (see our paper with Daniel).  -Dr. Spector
-Vrz = 1;
-Ezz = 1;
+Vrz = 1; % Not actually v, but greek nu (represents Poisson's ratio)
+Ezz = 1;  % Note- don't mix up Ezz with epszz
+
 
 %# Fitted parameters (to be determined by experimental fitting to 
 % the unknown material)
-tg=40.62; %in units of s   % for porosity_sp == 0.5
-Err = 1;
-% Not actually a v, but a greek nu used to represent Poisson's ratio
-Vrtheta = 1;
 c = 1;
 %tau1 = 1;
 %tau2 = 1;
 %tau = [tau1 tau2];
 tau = [1 1];
+tg=40.62; %in units of s   % for porosity_sp == 0.5
+Vrtheta = 1; % Not actually v, but greek nu (represents Poisson's ratio)
+Err = 1;
 
 
 %# Symbolics for Laplace
@@ -155,9 +155,9 @@ Ehat    = @(Sij) -2*(Srr*Szz-Srz^2)/(alpha(Sij));
 
 
 %  8
-%f       = r0^2*s / (Ehat*k*f2(c,tau))
+%f      = @(Sij) r0^2*s / (Ehat(Sij)*k*f2(c,tau))
 % Simplified using tg=r0^2/(Ehat*k)
-% !!Confirm should be a function of c, tau
+% !!Confirm should be a function of c, tau also maybe Sij or tg
 f       = tg * s/f2(c,tau);
 
 
@@ -166,22 +166,34 @@ f       = tg * s/f2(c,tau);
 % !!Confirm should be a function of Sij
 sigbar  = @(Sij) ...
     2*epszz*(...
-        C13(Sij)*(g(Sij)) ...
-        * besseli(1,sqrt(f)/sqrt(f)) ...
-        /(...
-            Ehat(Sij)*besseli(0,sqrt(f))...
-            -2*besseli(1,sqrt(f))/sqrt(f)...
-        ) ...
-        -1/2 ...
-    ) ...
-    + C33(Sij)/2 ...
-    + f1(Sij)*f2(c,tau)...
-    *(besseli(0,sqrt(f))-2*besseli(1,sqrt(f))/sqrt(f))...
-    /(2*Ehat(Sij)*besseli(0,sqrt(f)) - besseli(1,sqrt(f)/sqrt(f)) );
+        C13(Sij)...
+            *(...
+                g(Sij) ...
+                    * I1(sqrt(f))/sqrt(f) ...
+                    /(Ehat(Sij)*I0(sqrt(f))-2*I1(sqrt(f))/sqrt(f)) ...
+                -1/2 ...
+            ) ...
+        + C33(Sij)/2 ...
+        + f1(Sij)...
+            *f2(c,tau)*...
+            (I0(sqrt(f))-2*I1(sqrt(f))/sqrt(f))...
+            /(2 * ( Ehat(Sij)*I0(sqrt(f)) - I1(sqrt(f))/sqrt(f) ) ) ...
+    );
 
 
 %% TEST MATLAB'S LAPLACE INVERSION 
 F = 1/s^2+1/s;
 % Specifying s and t in ilaplace isn't actually needed as those 
 % are the default
-ilaplace(F, s, t)  
+f = ilaplace(F, s, t);  % Output of ilaplace is actually of class/type char
+ezplot(f)
+%ezplot(f, [-10 10])
+
+
+%% LAPLACE INVERSION
+F = epszz;
+F = sigbar;
+% Specifying s and t in ilaplace isn't actually needed as those 
+% are the default
+f = ilaplace(F, s, t);  % Output of ilaplace is actually of class/type char
+ezplot(f, [-10 10])

@@ -1,12 +1,31 @@
-% From email chain on Mar 28, 2021. Questions from Rahul, answers from Dr.
-% Spector.
+% CREDITS
+% Made by Rahul Yerrabelli for Dr. Alexander Spector's lab at Johns Hopkins
+% University, Department of Biomedical Engineering. 2021-.
+% To contact authors, reach out to aspector@jhu.edu for Dr. Spector and
+% ryerrab1@alumni.jh.edu or rsy2@illinois.edu for Rahul.
+
+% DESCRIPTION
+% TODO:
+
+% ARGUMENTS
+% TODO:
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% NOTES FROM EMAIL CHAIN
+% Email chain on Mar 28, 2021. 
+% Questions from Rahul, answers from Dr. Spector.
+%
 % ------------------------------------------------------------------------
 % QUESTION:
 % The list of fitted parameters (tg, Err, Vr?, c, tau1, tau2) should also
 % Vrz and Ezz. Otherwise, what is the equation to get Vrz and Ezz?
 %
-% ANSWER:
-% Ezz and Vrz are not the subjects of stress relaxation fitting because they are directly determined by the mesh deformation part of the experiment (see our paper with Daniel).
+% ANSWER: 
+% Ezz and Vrz are not the subjects of stress relaxation fitting
+% because they are directly determined by the mesh deformation part of the
+% experiment (see our paper with Daniel).
 %
 %
 % ------------------------------------------------------------------------
@@ -14,8 +33,9 @@
 % In equation 5, the first Srz is both multiplied by and divided by 2.
 % Please confirm that these cancel and the equation can be simplified.
 %
-% ANSWER:
-% Yes two 2s cancel each  other, but it was convenient to keep for the equation check.
+% ANSWER: 
+% Yes two 2s cancel each  other, but it was convenient to keep for
+% the equation check.
 %
 %
 % ------------------------------------------------------------------------
@@ -51,8 +71,9 @@
 % still a function of Sij. In other words, Sij's values are not defined (or
 % iterated through) to get the final result
 %
-% ANSWER:
-% The sigma bar function is a function of 6 parametrov:  Err, Vrtheta , tg, c, tau1, tau2.
+% ANSWER: 
+% The sigma bar function is a function of 6 parametrov:  Err,
+% Vrtheta , tg, c, tau1, tau2.
 %
 %
 % ------------------------------------------------------------------------

@@ -155,8 +155,8 @@ Ehat    = @(Sij) -2*(Srr*Szz-Srz^2)/(alpha(Sij));
 
 
 %  8
-%f       = r0^2*s / (Ecap*k*f2(c,tau))
-% Simplified using tg=r0^2/(Ecap*k)
+%f       = r0^2*s / (Ehat*k*f2(c,tau))
+% Simplified using tg=r0^2/(Ehat*k)
 % !!Confirm should be a function of c, tau
 f       = tg * s/f2(c,tau);
 
@@ -180,7 +180,7 @@ sigbar  = @(Sij) ...
     /(2*Ehat(Sij)*besseli(0,sqrt(f)) - besseli(1,sqrt(f)/sqrt(f)) );
 
 
-%% Test inversion
+%% TEST MATLAB'S LAPLACE INVERSION 
 F = 1/s^2+1/s;
 % Specifying s and t in ilaplace isn't actually needed as those 
 % are the default

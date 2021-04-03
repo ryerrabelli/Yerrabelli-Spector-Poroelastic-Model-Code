@@ -16,9 +16,10 @@
 %% NOTES FROM EMAIL CHAIN
 % Email chain on Mar 28, 2021. 
 % Questions from Rahul, answers from Dr. Spector.
+% *** means not addressed
 %
 % ------------------------------------------------------------------------
-% QUESTION:
+% QUESTION 1:
 % The list of fitted parameters (tg, Err, Vr?, c, tau1, tau2) should also
 % Vrz and Ezz. Otherwise, what is the equation to get Vrz and Ezz?
 %
@@ -29,7 +30,7 @@
 %
 %
 % ------------------------------------------------------------------------
-% QUESTION:
+% QUESTION 2:
 % In equation 5, the first Srz is both multiplied by and divided by 2.
 % Please confirm that these cancel and the equation can be simplified.
 %
@@ -39,7 +40,7 @@
 %
 %
 % ------------------------------------------------------------------------
-% QUESTION:
+% QUESTION 3:
 % Confirm equation 7 is a function of Sij (like equation 4 and 5 are) even
 % though the arguments are not explicitly stated
 %
@@ -48,7 +49,7 @@
 %
 %
 % ------------------------------------------------------------------------
-% QUESTION:
+% ***QUESTION 4:
 % Confirm equation 8 is a function of c and tau (like equation 6 is) even
 % though the arguments are not explicitly stated
 %
@@ -57,7 +58,7 @@
 %
 %
 % ------------------------------------------------------------------------
-% QUESTION:
+% QUESTION 5:
 % Confirm tau is a two-element vector of tau1 and tau2  (thus, equation 6
 % has a total of 3 arguments, not 2)
 %
@@ -66,7 +67,7 @@
 %
 %
 % ------------------------------------------------------------------------
-% QUESTION:
+% ***QUESTION 6:
 % In the final equation for the average axial stress, confirm that this is
 % still a function of Sij. In other words, Sij's values are not defined (or
 % iterated through) to get the final result

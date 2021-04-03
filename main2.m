@@ -181,7 +181,7 @@ sigbar  = @(Sij) ...
 
 
 %% Test inversion
-F = 1/s^2+1/s;t
+F = 1/s^2+1/s;
 % Specifying s and t in ilaplace isn't actually needed as those 
 % are the default
 ilaplace(F, s, t)  

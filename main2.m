@@ -88,32 +88,34 @@ ln = @(x) log(x);  % ln (x) = natural log = log(x) in matlab/coding
 I0 = @(x) besseli(0,x);
 I1 = @(x) besseli(1,x);
 
+% Symbolics for Laplace
+syms s t
+
 
 %% PARAMETERS
 
-%# Predefined constants
+% Predefined constants
 eps0 = 0.1; % 10 percent
 strain_rate = 0.1; % 1 percent per s (normally 1%/s)
-%# Below are directly determined by the mesh deformation part of the 
-%# experiment (see our paper with Daniel).  -Dr. Spector
+% Below are directly determined by the mesh deformation part of the 
+% experiment (see our paper with Daniel).  -Dr. Spector
 Vrz = 1; % Not actually v, but greek nu (represents Poisson's ratio)
 Ezz = 1;  % Note- don't mix up Ezz with epszz
 
 
-%# Fitted parameters (to be determined by experimental fitting to 
+% Fitted parameters (to be determined by experimental fitting to 
 % the unknown material)
 c = 1;
-%tau1 = 1;
-%tau2 = 1;
+tau1 = 1;
+tau2 = 1;
 %tau = [tau1 tau2];
-tau = [1 1];
+%tau = [1 1];
 tg=40.62; %in units of s   % for porosity_sp == 0.5
 Vrtheta = 1; % Not actually v, but greek nu (represents Poisson's ratio)
 Err = 1;
 
 
-%# Symbolics for Laplace
-syms s t
+
 
 
 
@@ -121,7 +123,7 @@ syms s t
 %  1
 %eps0 = strain_rate * t0
 t0 = eps0/strain_rate;
-epszz = 1 - exp(-s*t0)/s^2;  %#  Laplace transform of the axial strain
+epszz = 1 - exp(-s*t0)/(s*s);  %  Laplace transform of the axial strain
 
 
 
@@ -130,59 +132,59 @@ Srr     = 1/Err;
 Srtheta = -Vrtheta/Err;
 Srz     = -Vrz/Err;
 Szz     = 1/Ezz;
-Sij     = [Srr, Srtheta, Srz;   Srtheta, Srr, Srz;   Srz, Srz, Szz];
+%Sij     = [Srr, Srtheta, Srz;   Srtheta, Srr, Srz;   Srz, Srz, Szz];
 
 %  3
-alpha   = @(Sij) 2*Srz^2-Szz*Srtheta-Srr*Szz;
-C13     = @(Sij)  Srz/(alpha(Sij));
-C33     = @(Sij) -(Srr+Srtheta)/(alpha(Sij));
+alpha   =  2*Srz*Srz-Szz*Srtheta-Srr*Szz;
+C13     =   Srz/(alpha);
+C33     =  -(Srr+Srtheta)/(alpha);
 
 
 %  4
-g       = @(Sij) -(2*Srz+Szz)*(Srr-Srtheta)/(alpha(Sij));
+g       =  -(2*Srz+Szz)*(Srr-Srtheta)/(alpha);
 
 %  5  
 % Note- below could be simplified bc both divided and multiplied by 2
-f1      = @(Sij) -(2*Srz+Szz)/2 * 2*(Srr*Szz-Srz^2)/(alpha(Sij));
+f1      =  -(2*Srz+Szz)/2 * 2*(Srr*Szz-Srz*Srz)/(alpha);
 
 %  6
 % Viscoelastic parameters: c, tau 1, tau 2
-f2      = @(c,tau) 1 + c*ln( (1+s*tau(2))/(1+s*tau(1)) );
+f2      = 1 + c*ln( (1+s*tau2)/(1+s*tau1) );
 
 %  7
 % Note- Ehat is a function of Sij although wasn't stated in Spector's notes
-Ehat    = @(Sij) -2*(Srr*Szz-Srz^2)/(alpha(Sij));
+Ehat    =  -2*(Srr*Szz-Srz*Srz)/(alpha);
 
 
 %  8
-%f      = @(Sij) r0^2*s / (Ehat(Sij)*k*f2(c,tau))
+%f      =  r0^2*s / (Ehat*k*f2(c,tau1,tau2))
 % Simplified using tg=r0^2/(Ehat*k)
 % !!Confirm should be a function of c, tau also maybe Sij or tg
-f       = tg * s/f2(c,tau);
+f       = tg * s/f2;
 
 
 %% FINAL EQUATION
 % Laplace transform of the average axial stress
 % !!Confirm should be a function of Sij
-sigbar  = @(Sij) ...
+sigbar  =  ...
     2*epszz*(...
-        C13(Sij)...
+        C13...
             *(...
-                g(Sij) ...
+                g ...
                     * I1(sqrt(f))/sqrt(f) ...
-                    /(Ehat(Sij)*I0(sqrt(f))-2*I1(sqrt(f))/sqrt(f)) ...
+                    /(Ehat*I0(sqrt(f))-2*I1(sqrt(f))/sqrt(f)) ...
                 -1/2 ...
             ) ...
-        + C33(Sij)/2 ...
-        + f1(Sij)...
+        + C33/2 ...
+        + f1...
             *f2(c,tau)*...
             (I0(sqrt(f))-2*I1(sqrt(f))/sqrt(f))...
-            /(2 * ( Ehat(Sij)*I0(sqrt(f)) - I1(sqrt(f))/sqrt(f) ) ) ...
+            /(2 * ( Ehat*I0(sqrt(f)) - I1(sqrt(f))/sqrt(f) ) ) ...
     );
 
 
 %% TEST MATLAB'S LAPLACE INVERSION 
-F = 1/s^2+1/s;
+F = 1/(s*s)+1/s;
 % Specifying s and t in ilaplace isn't actually needed as those 
 % are the default
 f = ilaplace(F, s, t);  % Output of ilaplace is actually of class/type char

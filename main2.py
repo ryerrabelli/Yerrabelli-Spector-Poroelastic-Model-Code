@@ -36,8 +36,8 @@ eps0 = 0.1; # 10 percent
 strain_rate = 0.1; # 1 percent per s (normally 1#/s)
 ## Below are directly determined by the mesh deformation part of the
 ## experiment (see our paper with Daniel).  -Dr. Spector
-Vrz = 1; # Not actually v, but greek nu (represents Poisson's ratio)
-Ezz = 1;  # Note- don't mix up Ezz with epszz
+Vrz = 0.5; # Not actually v, but greek nu (represents Poisson's ratio)
+Ezz = 10;  # Note- don't mix up Ezz with epszz
 
 
 ## Fitted parameters (to be determined by experimental fitting to
@@ -116,3 +116,8 @@ sigbar  =  \
             (I0(sqrt(f))-2*I1(sqrt(f))/sqrt(f))\
             /(2 * ( Ehat*I0(sqrt(f)) - I1(sqrt(f))/sqrt(f) ) ) \
     );
+
+
+
+#####
+inverse_laplace_transform(sigbar, s, t)

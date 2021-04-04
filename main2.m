@@ -73,7 +73,7 @@
 % iterated through) to get the final result
 %
 % ANSWER: 
-% The sigma bar function is a function of 6 parametrov:  Err,
+% The sigma bar function is a function of 6 parameters:  Err,
 % Vrtheta , tg, c, tau1, tau2.
 %
 %
@@ -99,9 +99,10 @@ eps0 = 0.1; % 10 percent
 strain_rate = 0.1; % 1 percent per s (normally 1%/s)
 % Below are directly determined by the mesh deformation part of the 
 % experiment (see our paper with Daniel).  -Dr. Spector
-Vrz = 1; % Not actually v, but greek nu (represents Poisson's ratio)
-Ezz = 1;  % Note- don't mix up Ezz with epszz
+Vrz = 0.5; % Not actually v, but greek nu (represents Poisson's ratio)
+Ezz = 10;  % Note- don't mix up Ezz with epszz
 
+ 
 
 % Fitted parameters (to be determined by experimental fitting to 
 % the unknown material)
@@ -198,4 +199,7 @@ F = sigbar;
 % Specifying s and t in ilaplace isn't actually needed as those 
 % are the default
 f = ilaplace(F, s, t);  % Output of ilaplace is actually of class/type char
-ezplot(f, [-10 10])
+% ezplot(f, [-10 10])
+f = matlabFunction(f);  % convert char to actual function
+ts=[-2:0.01:2];
+plot(ts,f(ts))

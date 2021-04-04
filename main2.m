@@ -130,12 +130,12 @@ Srr     = 1/Err;
 Srtheta = -Vrtheta/Err;
 Srz     = -Vrz/Err;
 Szz     = 1/Ezz;
-
+Sij     = [Srr, Srtheta, Srz;   Srtheta, Srr, Srz;   Srz, Srz, Szz];
 
 %  3
+alpha   = @(Sij) 2*Srz^2-Szz*Srtheta-Srr*Szz;
 C13     = @(Sij)  Srz/(alpha(Sij));
 C33     = @(Sij) -(Srr+Srtheta)/(alpha(Sij));
-alpha   = @(Sij) 2*Srz^2-Szz*Srtheta-Srr*Szz;
 
 
 %  4

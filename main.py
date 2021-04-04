@@ -18,7 +18,14 @@ def ln(x):
     import math
     return math.log(x)
 
+#from scipy.special import i0 as I0
+#from scipy.special import i1 as I1
+#from math import sqrt
 
+from sympy import sqrt  # Not math.sqrt as that would not accept expression input
+from sympy.functions.special.bessel import besseli
+def I0(x): return besseli(0, x)
+def I1(x): return besseli(1, x)
 
 ### Start combined matlab/python code
 
@@ -27,13 +34,13 @@ def ln(x):
 ## Predefined constants
 eps0 = 0.1; # 10 percent
 strain_rate = 0.1; # 1 percent per s (normally 1#/s)
-## Below are directly determined by the mesh deformation part of the 
+## Below are directly determined by the mesh deformation part of the
 ## experiment (see our paper with Daniel).  -Dr. Spector
 Vrz = 1; # Not actually v, but greek nu (represents Poisson's ratio)
 Ezz = 1;  # Note- don't mix up Ezz with epszz
 
 
-## Fitted parameters (to be determined by experimental fitting to 
+## Fitted parameters (to be determined by experimental fitting to
 # the unknown material)
 c = 1;
 tau1 = 1;
@@ -73,7 +80,7 @@ C33     =  -(Srr+Srtheta)/(alpha);
 #  4
 g       =  -(2*Srz+Szz)*(Srr-Srtheta)/(alpha);
 
-#  5  
+#  5
 # Note- below could be simplified bc both divided and multiplied by 2
 f1      =  -(2*Srz+Szz)/2 * 2*(Srr*Szz-Srz*Srz)/(alpha);
 
@@ -91,3 +98,21 @@ Ehat    =  -2*(Srr*Szz-Srz*Srz)/(alpha);
 # Simplified using tg=r0^2/(Ehat*k)
 # !!Confirm should be a function of c, tau also maybe Sij or tg
 f       = tg * s/f2;
+
+
+
+sigbar  =  \
+    2*epszz*(\
+        C13\
+            *(\
+                g \
+                    * I1(sqrt(f))/sqrt(f) \
+                    /(Ehat*I0(sqrt(f))-2*I1(sqrt(f))/sqrt(f)) \
+                -1/2 \
+            ) \
+        + C33/2 \
+        + f1\
+            *f2*\
+            (I0(sqrt(f))-2*I1(sqrt(f))/sqrt(f))\
+            /(2 * ( Ehat*I0(sqrt(f)) - I1(sqrt(f))/sqrt(f) ) ) \
+    );

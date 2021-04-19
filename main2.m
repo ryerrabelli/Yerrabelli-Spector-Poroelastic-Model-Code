@@ -192,7 +192,7 @@ sigbar  =  ...
     );
 
 
-%% TEST MATLAB'S LAPLACE INVERSION 
+%% TEST MATLAB'S LAPLACE INVERSION, CLOSED BOUND
 F = 1/(s*s)+1/s;
 % Specifying s and t in ilaplace isn't actually needed as those 
 % are the default
@@ -211,6 +211,7 @@ f = ilaplace(F, s, t);  % Output of ilaplace is actually of class/type char
 f = matlabFunction(f);  % convert char to actual function
 ts=[-2:0.01:2];
 %plot(ts,f(ts))
+
 
 %% LAPLACE INVERSION - NUMERICAL  <-- uses external library
 F = sigbar;

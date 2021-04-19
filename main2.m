@@ -91,6 +91,14 @@ I1 = @(x) besseli(1,x);
 % Symbolics for Laplace
 syms s t
 
+% Add the subfolder with the library
+% Note- quotes cannot be used around the library name
+% How to add libraries: https://www.mathworks.com/help/matlab/matlab_oop/organizing-classes-in-folders.html
+% This library: https://www.mathworks.com/matlabcentral/fileexchange/39035-numerical-inverse-laplace-transform?s_tid=mwa_osa_a
+% We need this library bc the built-in ilaplace function of matlab only
+% gives closed form solutions, which is not possible here.
+addpath Numerical_Inverse_Laplace_Transform
+
 
 %% PARAMETERS
 
@@ -202,4 +210,8 @@ f = ilaplace(F, s, t);  % Output of ilaplace is actually of class/type char
 % ezplot(f, [-10 10])
 f = matlabFunction(f);  % convert char to actual function
 ts=[-2:0.01:2];
-plot(ts,f(ts))
+%plot(ts,f(ts))
+
+%%
+F = sigbar;
+talbot_inversion(matlabFunction(1/s), time)'

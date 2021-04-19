@@ -6,7 +6,8 @@
 from sympy.integrals.transforms import inverse_laplace_transform
 from sympy import exp, Symbol
 from sympy.abc import s, t
-
+t = Symbol("t", positive=True)  # defining as positive simplifies inverse laplace
+#s = Symbol("s", positive=True)
 a = Symbol('a', positive=True)
 # Using inverse_laplace_transform() method
 gfg = inverse_laplace_transform(exp(-a * s) / s, s, t)
@@ -120,4 +121,8 @@ sigbar  =  \
 
 
 #####
-inverse_laplace_transform(sigbar, s, t)
+x=inverse_laplace_transform(sigbar, s, t)
+print(x)
+
+h = 1/(s**3 + s**2/5 + s)
+x2=inverse_laplace_transform(exp(-a * s) / s**2, s, t).subs(a,2).subs(t,2)

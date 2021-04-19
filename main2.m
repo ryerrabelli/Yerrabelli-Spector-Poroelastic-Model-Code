@@ -201,7 +201,7 @@ ezplot(f)
 %ezplot(f, [-10 10])
 
 
-%% LAPLACE INVERSION
+%% LAPLACE INVERSION - CLOSED BOUND SOLUTION <-- not possible for sigbar
 F = epszz;
 F = sigbar;
 % Specifying s and t in ilaplace isn't actually needed as those 
@@ -212,6 +212,9 @@ f = matlabFunction(f);  % convert char to actual function
 ts=[-2:0.01:2];
 %plot(ts,f(ts))
 
-%%
+%% LAPLACE INVERSION - NUMERICAL  <-- uses external library
 F = sigbar;
-talbot_inversion(matlabFunction(1/s), time)'
+time = [0:.05:5]';
+inv_tal = talbot_inversion(matlabFunction(F), time);  % Talbot doesn't perform well for small times (has a lot of NaNs)
+inv_eul = euler_inversion(matlabFunction(F), time);  
+[time inv_tal inv_eul]

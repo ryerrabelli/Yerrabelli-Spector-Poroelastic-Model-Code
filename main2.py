@@ -3,8 +3,9 @@
 
 
 # import inverse_laplace_transform
+import numpy as np
 from sympy.integrals.transforms import inverse_laplace_transform
-from sympy import exp, Symbol
+from sympy import exp, Symbol, lambdify
 from sympy.abc import s, t
 t = Symbol("t", positive=True)  # defining as positive simplifies inverse laplace
 #s = Symbol("s", positive=True)
@@ -125,4 +126,12 @@ x=inverse_laplace_transform(sigbar, s, t)
 print(x)
 
 h = 1/(s**3 + s**2/5 + s)
-x2=inverse_laplace_transform(exp(-a * s) / s**2, s, t).subs(a,2).subs(t,2)
+#x2=inverse_laplace_transform(exp(-a * s) / s**2, s, t).subs(a,2).subs(t,2)
+
+from euler_inversion import euler_inversion
+F = lambda new_s: sigbar.subs(s,new_s)
+ret=euler_inversion(F, 2)
+F = np.vectorize(lambda new_s: sigbar.subs(s,new_s).evalf())
+#F=lambdify(s, sigbar, modules=["numpy",'sympy.functions.special.bessel'])
+time = np.arange(0.2, 2, 0.2)
+ret=euler_inversion(F, time)

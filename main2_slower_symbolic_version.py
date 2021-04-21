@@ -1,3 +1,6 @@
+# NOTE-  This code pathway was abandoned bc it is slower
+# Can return to it if we later want to use symbolics
+
 # https://stackoverflow.com/questions/47278520/how-to-perform-a-numerical-laplace-and-inverse-laplace-transforms-in-matlab-for
 # https://stackoverflow.com/questions/41042699/sympy-computing-the-inverse-laplace-transform
 

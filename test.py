@@ -166,3 +166,16 @@ f_s_eval=f_s(beta_mesh/t_mesh)
 ilt = 10**(Marg/3)/times  * sum (eta_mesh * real( f_s_eval ), axis=1 )
 print(ilt)
 print(timer.time() - t)
+
+t1=timer.time();
+for it in range(130):
+    temp=f_s(it/10.0);
+
+t2=timer.time()-t1
+print(t2)
+
+#temp=f_s(np.array(list(range(130)))/10)
+f_s1 = lambda new_s: sigbar.subs(s, new_s).evalf()
+temp=f_s1(2)
+t3=timer.time()-t2-t1
+print(t3)

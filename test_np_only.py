@@ -104,8 +104,13 @@ def sigbar(s):
     return sigbar
 
 
+import time as timer
+# inputting a value of time=0 doesn't error (just returns None/NaN), but takes longer (about 2x as much) on python; not really MATLAB though
 times=np.array([2,3])
+times = np.arange(0.05, 5.05, 0.05)
 from euler_inversion import euler_inversion
-x=euler_inversion(sigbar, times)
-print(x)
-
+t1=timer.time();
+ret=euler_inversion(sigbar, times)
+print(ret)
+t2=timer.time()-t1
+print(t2)

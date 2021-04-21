@@ -217,7 +217,7 @@ ts=[-2:0.01:2];
 F = sigbar;
 % inputting a value of time=0 doesn't error (just returns None/NaN), but takes longer (about 2x as much) on python; not really MATLAB though
 times = [0.05:.05:5]';
-times=[2,3]';
+%times=[2,3]';
 inv_tal = talbot_inversion(matlabFunction(F), times);  % Talbot doesn't perform well for small times (has a lot of NaNs)
 tic
 inv_eul = euler_inversion(matlabFunction(F), times);  

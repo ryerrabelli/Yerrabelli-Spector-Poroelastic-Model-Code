@@ -128,14 +128,62 @@ print(x)
 h = 1/(s**3 + s**2/5 + s)
 #x2=inverse_laplace_transform(exp(-a * s) / s**2, s, t).subs(a,2).subs(t,2)
 
-from euler_inversion import euler_inversion
-F = lambda new_s: sigbar.subs(s,new_s)
-F = lambda new_ss: [sigbar.subs(s,new_s) for new_s in new_ss]
-ret=euler_inversion(F, 2)
-print(ret)
-#F = np.vectorize(lambda new_s: sigbar.subs(s,new_s).evalf())
-#F=lambdify(s, sigbar, modules=["numpy",'sympy.functions.special.bessel'])
-time = np.arange(0.2, 2, 0.2)
-ret=euler_inversion(F, time)
-print(ret)
 
+#####
+import numpy as np
+from numpy import prod  # Do direct imports to match matlab functions exactly (i.e. prod(x) as opposed to np.prod(.))
+from numpy import sum  # Warning, overrides the basic sum
+from numpy import ones
+from numpy import zeros
+from numpy import log
+from numpy import mod
+from numpy import pi
+from numpy import meshgrid
+from numpy import real
+import sympy
+
+import time as timer
+f_s = lambda new_s: sigbar.subs(s, new_s)
+f_s = lambda new_ss: [sigbar.subs(s,new_s) for new_s in new_ss]
+# Below allows a numpy (or not) input and returns a numpy output of complex values (not of sympy objects)
+f_s = lambda new_ss: np.array([sigbar.subs(s,new_s).evalf() for new_s in np.array(new_ss).flatten()]).astype(complex).reshape(np.array(new_ss).shape)
+
+times=np.array(2)
+times=np.array([2,3])
+#times = np.arange(0.2, 2, 0.2)
+#times = np.arange(0.05, 5, 0.05)
+Marg=32
+
+t = timer.time()
+
+def bnml(n,z):
+    one_to_z = np.arange(1, z+1)
+    return prod( (n-(z-one_to_z))/one_to_z )
+
+#xi = np.array([0.5, ones(Marg), zeros(Marg-1), 2**-Marg])   # do ones(Marg), not ones(1,Marg) unlike matlab
+xi = np.concatenate( ([0.5], ones(Marg), zeros(Marg-1), [2**-Marg])  )
+for k in range(1,Marg):
+    xi[2*Marg-k ] = xi[2*Marg-k + 1] + 2**-Marg * bnml(Marg,k)
+k = np.arange(0,2*Marg+1)
+beta = Marg*log(10)/3 + 1j*pi*k
+eta = (1-mod(k, 2)*2) * xi
+beta_mesh, t_mesh = meshgrid(beta, times)
+eta_mesh, _ = meshgrid(eta, times)
+f_s_eval=f_s(beta_mesh/t_mesh)
+#ilt = 10**(Marg/3)/times  * sum (eta_mesh * sympy.re( sympy.Matrix(f_s_eval) ), axis=1 )
+ilt = 10**(Marg/3)/times  * sum (eta_mesh * real( f_s_eval ), axis=1 )
+print(ilt)
+print(timer.time() - t)
+
+t1=timer.time();
+for it in range(130):
+    temp=f_s(it/10.0);
+
+t2=timer.time()-t1
+print(t2)
+
+#temp=f_s(np.array(list(range(130)))/10)
+f_s1 = lambda new_s: sigbar.subs(s, new_s).evalf()
+temp=f_s1(2)
+t3=timer.time()-t2-t1
+print(t3)

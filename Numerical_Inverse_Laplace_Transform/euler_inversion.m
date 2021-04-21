@@ -42,6 +42,7 @@ function ilt = euler_inversion(f_s, t, M)
     xi = [0.5, ones(1, M), zeros(1, M-1), 2^-M];
     for k = 1:M-1
         xi(2*M-k + 1) = xi(2*M-k + 2) + 2^-M * bnml(M, k);
+        xi
     end
     k = 0:2*M; % Iteration index
     beta = M*log(10)/3 + 1i*pi*k;

@@ -30,11 +30,12 @@ Ezz = 10;  # Note- don't mix up Ezz with epszz
 c = 1;
 tau1 = 1;
 tau2 = 1;
-#tau = [tau1 tau2];
+#tau = [tau1, tau2];
 #tau = [1 1];
 tg=40.62; #in units of s   # for porosity_sp == 0.5
 Vrtheta = 1; # Not actually v, but greek nu (represents Poisson's ratio)
 Err = 1;
+
 
 
 

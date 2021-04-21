@@ -130,8 +130,12 @@ h = 1/(s**3 + s**2/5 + s)
 
 from euler_inversion import euler_inversion
 F = lambda new_s: sigbar.subs(s,new_s)
+F = lambda new_ss: [sigbar.subs(s,new_s) for new_s in new_ss]
 ret=euler_inversion(F, 2)
-F = np.vectorize(lambda new_s: sigbar.subs(s,new_s).evalf())
+print(ret)
+#F = np.vectorize(lambda new_s: sigbar.subs(s,new_s).evalf())
 #F=lambdify(s, sigbar, modules=["numpy",'sympy.functions.special.bessel'])
 time = np.arange(0.2, 2, 0.2)
 ret=euler_inversion(F, time)
+print(ret)
+

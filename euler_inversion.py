@@ -16,7 +16,7 @@ from numpy import real
 import sympy
 
 
-def euler_inversion(f_s, time, Marg=32):
+def euler_inversion(f_s, times, Marg=32):
     def bnml(n,z):
         one_to_z = np.arange(1, z+1)
         return prod( (n-(z-one_to_z))/one_to_z )
@@ -28,8 +28,8 @@ def euler_inversion(f_s, time, Marg=32):
     k = np.arange(0,2*Marg+1)
     beta = Marg*log(10)/3 + 1j*pi*k
     eta = (1-mod(k, 2)*2) * xi
-    beta_mesh, t_mesh = meshgrid(beta, time)
-    eta_mesh = meshgrid(eta, time)
-    ilt = 10**(Marg/3)/time  * sum (eta_mesh * real( f_s(beta_mesh/t_mesh) ), axis=2 )
+    beta_mesh, t_mesh = meshgrid(beta, times)
+    eta_mesh = meshgrid(eta, times)
+    ilt = 10 ** (Marg/3) / times * sum (eta_mesh * real(f_s(beta_mesh / t_mesh)), axis=2)
     return ilt
 

@@ -3,6 +3,7 @@
 
 
 # import inverse_laplace_transform
+
 import numpy as np
 from sympy.integrals.transforms import inverse_laplace_transform
 from sympy import exp, Symbol, lambdify
@@ -134,11 +135,18 @@ from numpy import meshgrid
 from numpy import real
 import sympy
 
+import time as timer
 f_s = lambda new_s: sigbar.subs(s, new_s)
-time=np.array(2)
-time=np.array([2,3])
-time = np.arange(0.2, 2, 0.2)
+f_s = lambda new_ss: [sigbar.subs(s,new_s) for new_s in new_ss]
+f_s = lambda new_ss: np.array([sigbar.subs(s,new_s).evalf() for new_s in np.array(new_ss).flatten()]).astype(complex).reshape(np.array(new_ss).shape)
+
+times=np.array(2)
+times=np.array([2,3])
+#times = np.arange(0.2, 2, 0.2)
+#times = np.arange(0.05, 5, 0.05)
 Marg=32
+
+t = timer.time()
 
 def bnml(n,z):
     one_to_z = np.arange(1, z+1)
@@ -151,7 +159,10 @@ for k in range(1,Marg):
 k = np.arange(0,2*Marg+1)
 beta = Marg*log(10)/3 + 1j*pi*k
 eta = (1-mod(k, 2)*2) * xi
-beta_mesh, t_mesh = meshgrid(beta, time)
-eta_mesh = meshgrid(eta, time)
-ilt = 10**(Marg/3)/time  * sum (eta_mesh * real( f_s(beta_mesh/t_mesh) ), axis=2 )
+beta_mesh, t_mesh = meshgrid(beta, times)
+eta_mesh, _ = meshgrid(eta, times)
+f_s_eval=f_s(beta_mesh/t_mesh)
+#ilt = 10**(Marg/3)/times  * sum (eta_mesh * sympy.re( sympy.Matrix(f_s_eval) ), axis=1 )
+ilt = 10**(Marg/3)/times  * sum (eta_mesh * real( f_s_eval ), axis=1 )
 print(ilt)
+print(timer.time() - t)

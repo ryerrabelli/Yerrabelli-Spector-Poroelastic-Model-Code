@@ -151,8 +151,8 @@ class ViscoporoelasticModel:
             times = np.arange(0.05, 5.05, 0.05)
             from euler_inversion import euler_inversion
             t1=timer.time();
-            ret=euler_inversion(self.laplace_function, times)
-            print(ret)
+            sigma=euler_inversion(self.laplace_function, times)
+            print(sigma)
             t2=timer.time()-t1
             print(t2)
 

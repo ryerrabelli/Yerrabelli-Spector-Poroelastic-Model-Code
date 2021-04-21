@@ -1,3 +1,4 @@
+# Written by Rahul Yerrabelli
 # This code was originally based off the MATLAB code in:
 # Tucker McClure (2021). Numerical Inverse Laplace Transform (https://www.mathworks.com/matlabcentral/fileexchange/39035-numerical-inverse-laplace-transform), MATLAB Central File Exchange. Retrieved April 19, 2021.
 # The original paper was:
@@ -13,11 +14,10 @@ from numpy import mod
 from numpy import pi
 from numpy import meshgrid
 from numpy import real
-import sympy
 
 
 def euler_inversion(f_s, times, Marg=32):
-    def bnml(n,z):
+    def bnml(n, z):
         one_to_z = np.arange(1, z+1)
         return prod( (n-(z-one_to_z))/one_to_z )
 
@@ -29,7 +29,7 @@ def euler_inversion(f_s, times, Marg=32):
     beta = Marg*log(10)/3 + 1j*pi*k
     eta = (1-mod(k, 2)*2) * xi
     beta_mesh, t_mesh = meshgrid(beta, times)
-    eta_mesh = meshgrid(eta, times)
-    ilt = 10 ** (Marg/3) / times * sum (eta_mesh * real(f_s(beta_mesh / t_mesh)), axis=2)
+    eta_mesh, _ = meshgrid(eta, times)
+    ilt = 10 ** (Marg/3) / times * sum (eta_mesh * real(f_s(beta_mesh / t_mesh)), axis=1)
     return ilt
 

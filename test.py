@@ -17,9 +17,6 @@ gfg = inverse_laplace_transform(exp(-a * s) / s, s, t)
 print(gfg)
 
 
-def ln(x):
-    import math
-    return math.log(x)
 
 #from scipy.special import i0 as I0
 #from scipy.special import i1 as I1
@@ -29,6 +26,9 @@ from sympy import sqrt  # Not math.sqrt as that would not accept expression inpu
 from sympy.functions.special.bessel import besseli
 def I0(x): return besseli(0, x)
 def I1(x): return besseli(1, x)
+def ln(x):
+    import math
+    return math.log(x)
 
 ### Start combined matlab/python code
 

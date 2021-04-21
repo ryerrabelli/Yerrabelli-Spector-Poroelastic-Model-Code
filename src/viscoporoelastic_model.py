@@ -14,15 +14,7 @@ def ln(x):
 
 ### Start combined matlab/python code
 
-## PARAMETERS
 
-## Predefined constants
-eps0 = 0.1; # 10 percent
-strain_rate = 0.1; # 1 percent per s (normally 1#/s)
-## Below are directly determined by the mesh deformation part of the
-## experiment (see our paper with Daniel).  -Dr. Spector
-Vrz = 0.5; # Not actually v, but greek nu (represents Poisson's ratio)
-Ezz = 10;  # Note- don't mix up Ezz with epszz
 
 """
 ## Fitted parameters (to be determined by experimental fitting to
@@ -37,27 +29,57 @@ Vrtheta = 1; # Not actually v, but greek nu (represents Poisson's ratio)
 Err = 1;
 """
 
-class viscoporoelastic_model:
+
+class ViscoporoelasticModel:
+    ## PARAMETERS
+    ## Predefined constants
+    eps0 = 0.1;  # 10 percent
+    strain_rate = 0.1;  # 1 percent per s (normally 1#/s)
+    ## Below are directly determined by the mesh deformation part of the
+    ## experiment (see our paper with Daniel).  -Dr. Spector
+    Vrz = 0.5;  # Not actually v, but greek nu (represents Poisson's ratio)
+    Ezz = 10;  # Note- don't mix up Ezz with epszz
+
+
     def __init__(self):
-        c = 1;
-        tau1 = 1;
-        tau2 = 1;
+        self.c = 1;
+        self.tau1 = 1;
+        self.tau2 = 1;
         # tau = [tau1, tau2];
         # tau = [1 1];
-        tg = 40.62;  # in units of s   # for porosity_sp == 0.5
-        Vrtheta = 1;  # Not actually v, but greek nu (represents Poisson's ratio)
-        Err = 1;
+        self.tg = 40.62;  # in units of s   # for porosity_sp == 0.5
+        self.Vrtheta = 1;  # Not actually v, but greek nu (represents Poisson's ratio)
+        self.Err = 1;
 
-    def laplace_function(self, s,
+    @staticmethod
+    def predefined_constants():
+        return ViscoporoelasticModel.eps0, ViscoporoelasticModel.strain_rate, ViscoporoelasticModel.Vrz, ViscoporoelasticModel.Ezz
+
+
+    def laplace_value(self, s,
                          ## Fitted parameters (to be determined by experimental fitting to
                          # the unknown material)
                          c=1,
                          tau1 = 1,
-                         tau2 = 1,                     # tau = [tau1, tau2]; # tau = [1 1];
+                         tau2 = 1,    # tau = [tau1, tau2]; # tau = [1 1];
                          tg = 40.62,  # in units of s   # for porosity_sp == 0.5
                          Vrtheta = 1,  # Not actually v, but greek nu (represents Poisson's ratio)
                          Err = 1
                          ):
+        print(self.c)
+        c = self.c;
+        tau1 = self.tau1;
+        tau2 = self.tau2;
+        # tau = [tau1, tau2];
+        # tau = [1 1];
+        tg = self.tg;  # in units of s   # for porosity_sp == 0.5
+        Vrtheta = self.Vrtheta;  # Not actually v, but greek nu (represents Poisson's ratio)
+        Vrtheta = self.Vrtheta;  # Not actually v, but greek nu (represents Poisson's ratio)
+        Err = self.Err;
+
+        eps0, strain_rate, Vrz, Ezz = ViscoporoelasticModel.predefined_constants()
+
+
         #print(s)
         ## BASE EQUATIONS
         #  1
@@ -133,3 +155,4 @@ class viscoporoelastic_model:
             print(ret)
             t2=timer.time()-t1
             print(t2)
+

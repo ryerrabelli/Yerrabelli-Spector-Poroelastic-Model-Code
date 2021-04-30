@@ -3,13 +3,11 @@ from numpy import exp
 from numpy import sqrt
 import scipy.special as sp
 
+
 # Numpy besseli (i0) function doesn't support complex values and only has order 0
 def I0(x): return sp.iv(0, x) #return np.i0(x); #besseli(0, x)
 def I1(x): return sp.iv(1, x) #besseli(1, x)
-def ln(x):
-    return np.log(x)
-    #import math
-    #return math.log(x)
+def ln(x): return np.log(x)  #import math #return math.log(x)
 
 
 ### Start combined matlab/python code
@@ -40,7 +38,6 @@ class ViscoporoelasticModel:
     Vrz = 0.5;  # Not actually v, but greek nu (represents Poisson's ratio)
     Ezz = 10;  # Note- don't mix up Ezz with epszz
 
-
     def __init__(self):
         self.c = 1;
         self.tau1 = 1;
@@ -52,21 +49,64 @@ class ViscoporoelasticModel:
         self.Err = 1;
 
     @staticmethod
-    def predefined_constants():
+    def get_predefined_constant_names():
+        return "eps0", "strain_rate", "Vrz", "Ezz"
+
+    @staticmethod
+    def get_predefined_constants():
         return ViscoporoelasticModel.eps0, ViscoporoelasticModel.strain_rate, ViscoporoelasticModel.Vrz, ViscoporoelasticModel.Ezz
 
+    @staticmethod
+    def get_fitted_parameter_names():
+        return "c", "tau1", "tau2", "tg", "Vrtheta", "Err"
 
-    def laplace_value(self, s,
-                         ## Fitted parameters (to be determined by experimental fitting to
-                         # the unknown material)
-                         c=1,
-                         tau1 = 1,
-                         tau2 = 1,    # tau = [tau1, tau2]; # tau = [1 1];
-                         tg = 40.62,  # in units of s   # for porosity_sp == 0.5
-                         Vrtheta = 1,  # Not actually v, but greek nu (represents Poisson's ratio)
-                         Err = 1
-                         ):
-        print(self.c)
+    # This is not a static method as fitted parameters depend on the instance (note- the names are still same though)
+    def get_fitted_parameters(self):
+        return self.c, self.tau1, self.tau2, self.tg, self.Vrtheta, self.Err;
+
+    @staticmethod
+    def get_var_categories():
+        return ("Constant",)    * len(ViscoporoelasticModel.get_predefined_constant_names()) + \
+               ("FittedParam",) * len(ViscoporoelasticModel.get_fitted_parameter_names())
+
+    def set_fitted_parameters(self,
+                          ## Fitted parameters (to be determined by experimental fitting to
+                          # the unknown material)
+                          c=None,
+                          tau1=None,
+                          tau2=None,  # tau = [tau1, tau2];
+                          tg=None,  # in units of s   # for porosity_sp == 0.5
+                          Vrtheta=None,  # Not actually v, but greek nu (represents Poisson's ratio)
+                          Err=None,
+                          ):
+        if c is not None:
+            self.c = c
+        if tau1 is not None:
+            self.tau1 = tau1
+        if tau2 is not None:
+            self.tau2 = tau2
+        if tg is not None:
+            self.tg = tg
+        if Vrtheta is not None:
+            self.Vrtheta = Vrtheta
+        if Err is not None:
+            self.Err = Err
+        return self.get_fitted_parameters()
+
+    def laplace_value(self,
+                      s,
+                      ## Fitted parameters (to be determined by experimental fitting to
+                      # the unknown material)
+                      c=None,
+                      tau1=None,
+                      tau2=None,  # tau = [tau1, tau2];
+                      tg=None,  # in units of s   # for porosity_sp == 0.5
+                      Vrtheta=None,  # Not actually v, but greek nu (represents Poisson's ratio)
+                      Err=None,
+                      ):
+
+        """
+        self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, tg=tg, Vrtheta=Vrtheta, Err=Err)
         c = self.c;
         tau1 = self.tau1;
         tau2 = self.tau2;
@@ -74,10 +114,11 @@ class ViscoporoelasticModel:
         # tau = [1 1];
         tg = self.tg;  # in units of s   # for porosity_sp == 0.5
         Vrtheta = self.Vrtheta;  # Not actually v, but greek nu (represents Poisson's ratio)
-        Vrtheta = self.Vrtheta;  # Not actually v, but greek nu (represents Poisson's ratio)
         Err = self.Err;
+        """
+        c, tau1, tau2, tg, Vrtheta, Err = self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, tg=tg, Vrtheta=Vrtheta, Err=Err)
 
-        eps0, strain_rate, Vrz, Ezz = ViscoporoelasticModel.predefined_constants()
+        eps0, strain_rate, Vrz, Ezz = ViscoporoelasticModel.get_predefined_constants()
 
 
         #print(s)
@@ -141,6 +182,8 @@ class ViscoporoelasticModel:
                     (I0(sqrt(f))-2*I1(sqrt(f))/sqrt(f))\
                     /(2 * ( Ehat*I0(sqrt(f)) - I1(sqrt(f))/sqrt(f) ) ) \
             );
+
+
         return sigbar
 
 
@@ -155,4 +198,23 @@ class ViscoporoelasticModel:
             print(sigma)
             t2=timer.time()-t1
             print(t2)
+
+
+class TestModel:
+    alpha = 0.5; tg = 7e-3; strain_rate = 1e-4; t0 = 1e3
+
+    def laplace_value(self, s=None, alpha=None, tg=None, strain_rate=None, t0=None):  #, s, alpha=0.5, tg=7e-3, strain_rate=1e-4, t0=1e3
+        if alpha is None:
+            alpha = self.alpha
+        if tg is None:
+            tg = self.tg
+        if strain_rate is None:
+            strain_rate = self.strain_rate
+        if t0 is None:
+            t0 = self.t0
+
+        eps  = tg*strain_rate*(1 - exp(-s*t0/tg))/(s*s);
+        F = eps * (3*I0(sqrt(s))-8*alpha*I1(sqrt(s))/sqrt(s)) / (I0(sqrt(s))-2*alpha*I1(sqrt(s))/sqrt(s))
+        return F
+
 

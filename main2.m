@@ -197,7 +197,7 @@ F = 1/(s*s)+1/s;
 % Specifying s and t in ilaplace isn't actually needed as those 
 % are the default
 f = ilaplace(F, s, t);  % Output of ilaplace is actually of class/type char
-ezplot(f)
+%ezplot(f)
 %ezplot(f, [-10 10])
 
 
@@ -224,3 +224,8 @@ inv_eul = euler_inversion(matlabFunction(F), times);
 [times inv_tal inv_eul]
 toc
 %f_s = matlabFunction(F); t=times; M=32;
+
+%%
+figure;
+plot(times, inv_eul)
+

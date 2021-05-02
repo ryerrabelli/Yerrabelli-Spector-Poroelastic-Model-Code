@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.optimize
 from numpy import exp
 from numpy import sqrt
 import scipy.special as sp
@@ -7,6 +8,8 @@ import scipy.special as sp
 # Numpy besseli (i0) function doesn't support complex values and only has order 0
 def I0(x): return sp.iv(0, x) #return np.i0(x); #besseli(0, x)
 def I1(x): return sp.iv(1, x) #besseli(1, x)
+def J0(x): return sp.jv(0, x)
+def J1(x): return sp.jv(1, x)
 def ln(x): return np.log(x)  #import math #return math.log(x)
 
 
@@ -216,5 +219,48 @@ class TestModel:
         eps  = tg*strain_rate*(1 - exp(-s*t0/tg))/(s*s);
         F = eps * (3*I0(sqrt(s))-8*alpha*I1(sqrt(s))/sqrt(s)) / (I0(sqrt(s))-2*alpha*I1(sqrt(s))/sqrt(s))
         return F
+
+
+class TestModel2:
+    vs = 0
+    tg = 7e-3  # sec
+    Es = 7e6  # Pa
+    eps0 = 0.001
+    a = 0.003  # meters
+
+    @staticmethod
+    def get_predefined_constants():
+        return TestModel2.vs, TestModel2.tg, TestModel2.Es, TestModel2.eps0, TestModel2.a
+
+    def laplace_value(self, s):
+        vs, tg, Es, eps0, a = TestModel2.get_predefined_constants()
+        eps = -eps0/s
+        alpha = (1-2*vs)/(2*(1+vs))
+        F = eps * (3*I0(sqrt(s))-8*alpha*I1(sqrt(s))/sqrt(s)) / (I0(sqrt(s))-2*alpha*I1(sqrt(s))/sqrt(s))
+        return F
+
+    def inverted_value(self, t, bessel_len=20):
+        vs, tg, Es, eps0, a = TestModel2.get_predefined_constants()
+
+        alpha2 = np.zeros(shape=bessel_len)
+        for n in range(bessel_len):
+            def eqn(x):
+                return J1(x) - (1-vs)/(1-2*vs)*x*J0(x)
+            # Use (n+1)*pi instead of n*pi bc python is zero-indexed unlike Matlab
+            alpha2[n] = scipy.optimize.fsolve(func=eqn, x0=(n+1)*np.pi)
+
+        summation = 0
+        for n in range(bessel_len):
+            temp = 1-2*vs
+            An = (1-vs)*temp/(1+vs) * 1/(temp*temp*alpha2[n]-temp)
+            summation += An * np.exp(-alpha2[n]*t/tg)
+
+        F = np.pi * a
+        F = np.pi * a*a
+        F = np.pi * a*a * -Es
+        F = np.pi * a*a * -Es * eps0
+        F = np.pi * a*a * -Es * eps0 * (1 + summation)
+        return F
+
 
 

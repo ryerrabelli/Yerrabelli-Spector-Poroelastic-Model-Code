@@ -6,9 +6,9 @@ import time as timer
 from src.euler_inversion import euler_inversion
 
 
-def plot_laplace_analysis(func, func_name, x_names, s_vals, input_times, plot_times, input_times_anal=None, plot_times_anal=None, inv_func_anal=None ):
+def plot_laplace_analysis(func, func_name, x_names, s_vals, input_times, plot_times, input_times_anal=None, plot_times_anal=None, inv_func_anal=None, Marg=None ):
     t1=timer.time();
-    inverted_vals=euler_inversion(func, input_times)
+    inverted_vals=euler_inversion(func, input_times, Marg=Marg)
     t2=timer.time()-t1
     print("Time taken in sec:", t2)
 
@@ -18,9 +18,10 @@ def plot_laplace_analysis(func, func_name, x_names, s_vals, input_times, plot_ti
     #percent_error = (inverted_vals-inverted_vals_analytical)/inverted_vals
     if inv_func_anal is not None:
         inverted_vals_analytical = inv_func_anal(input_times_anal)
-        percent_error = (inverted_vals-inverted_vals_analytical)/inverted_vals * 100
+        percent_error = (inverted_vals-inverted_vals_analytical)/inverted_vals_analytical * 100
 
     fig, axs = plt.subplots(2,2)
+    fig.tight_layout()
     fig.set_figwidth(9)
     fig.set_figheight(3*2+1)
     fig.set_dpi(150)
@@ -42,9 +43,9 @@ def plot_laplace_analysis(func, func_name, x_names, s_vals, input_times, plot_ti
 
     if inverted_vals_analytical is not None:
       axs[1,1].plot(plot_times_anal, inverted_vals_analytical, ".-y")
-      axs[1,1].set_xlabel(x_names["t"])
+      axs[1,1].set_xlabel(x_names.get("t_anal") or x_names["t"])
       axs[1,1].set_xlim([0, None])
-      axs[1,1].set_ylabel(func_name["t"])
+      axs[1,1].set_ylabel(func_name.get("t_anal") or func_name["t"])
       axs[1,1].grid()
       axs[1,1].title.set_text("Analytical Inverse Laplace")
 

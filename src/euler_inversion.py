@@ -16,7 +16,10 @@ from numpy import meshgrid
 from numpy import real
 
 
-def euler_inversion(f_s, times, Marg=32):
+def euler_inversion(f_s, times, Marg=None):
+    if Marg is None:
+        Marg = 32
+
     def bnml(n, z):
         one_to_z = np.arange(1, z+1)
         return prod( (n-(z-one_to_z))/one_to_z )

@@ -108,22 +108,30 @@ def plot_laplace_analysis(func,
             ax10.plot(plot_times_anal[is_in_num_times_too], inversion_error*100.0, ".-g")
             if min(abs(inversion_error * 100.0)) < 0.1:
                 ax10.set_ylim([-100, 100])
-            elif max(ax10.get_ylim()) < 0:
-                ax10.set_ylim(top=0)
-            elif min(ax10.get_ylim()) > 0:
-                ax10.set_ylim(bottom=0)
+            else:
+                # Center y axis around 0
+                yabs_max = abs(max(ax10.get_ylim(), key=abs))*1.1
+                ax10.set_ylim(bottom=-yabs_max, top=yabs_max)
+                """ 
+                # Force 0 to be in the y axis range
+                if max(ax10.get_ylim()) < 0:
+                    ax10.set_ylim(top=0)
+                elif min(ax10.get_ylim()) > 0:
+                    ax10.set_ylim(bottom=0)
+                """
         else:
             ax10.set_ylim([-100, 100])
         ax10.set_xlabel(x_names["t"])
         ax10.set_xlim([0, None])
         ax10.set_ylabel(func_name["t"])
-        ax10.set_ylabel("% error")
+        #ax10.set_ylabel("% error: (Numer-Anal)/Anal")
+        ax10.set_ylabel(r"% $error=\frac{F_{Numer}(t)-F_{Anal}(t)}{F_{Anal}(t)}$")
         # Note- if a y value is 0.5, then percentformatter makes it 0.5% not 50%.
         # Thus have to multiply by 100 before getting the y values.
         ax10.yaxis.set_major_formatter(mtick.PercentFormatter())
 
         ax10.grid()
-        ax10.title.set_text("Percent Error (Numerical to Analytical)")
+        ax10.title.set_text("Percent Error")
 
     return fig
 

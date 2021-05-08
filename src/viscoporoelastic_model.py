@@ -287,7 +287,7 @@ class TestModel2:
         return F
 
     def inverted_value_units(self):
-        return "N"  # Newtons
+        return "Newtons"  # Newtons
 
 
 

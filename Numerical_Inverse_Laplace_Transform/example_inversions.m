@@ -41,7 +41,7 @@ euler_inversion(fun, time)'
 
 %% Ramp
 % Let's try a simple ramp with more compact notation, defining directly in 
-% the call to |talbot_inversion| both the function and the times at which 
+% the call to |talbot_inversion| both the function and the times at which
 % we want the function evaluated.
 talbot_inversion(@(s) 1/s^2, [1 10 100 1000 10000])'
 

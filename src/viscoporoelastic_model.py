@@ -223,14 +223,39 @@ class TestModel:
 
 class TestModel2:
     vs = 0
-    tg = 7e-3  # sec
+    tg = 7e3  # sec
     Es = 7e6  # Pa
     eps0 = 0.001
     a = 0.003  # meters
+    alpha2_vals=None
+    A_vals=None
+    saved_bessel_len = 0
+    @staticmethod
+    def characteristic_eqn(x):
+        vs, tg, Es, eps0, a = TestModel2.get_predefined_constants()
+        return J1(x) - (1 - vs) / (1 - 2 * vs) * x * J0(x)
+
+    def setup_constants(self, bessel_len=20):
+        vs, tg, Es, eps0, a = TestModel2.get_predefined_constants()
+        alpha2_vals = np.zeros(shape=bessel_len)
+        for n in range(bessel_len):
+            # Use (n+1)*pi instead of n*pi bc python is zero-indexed unlike Matlab
+            alpha2_vals[n] = scipy.optimize.fsolve(func=type(self).characteristic_eqn, x0=(n + 1) * np.pi)
+
+        A_vals = np.zeros(shape=bessel_len)
+        for n in range(bessel_len):
+            temp = 1 - 2 * vs
+            A_vals[n] = (1 - vs) * temp / (1 + vs) * 1 / (temp * temp * alpha2_vals[n] - temp)
+
+        type(self).alpha2_vals=alpha2_vals
+        type(self).A_vals = A_vals
+        type(self).saved_bessel_len = bessel_len
 
     @staticmethod
     def get_predefined_constants():
         return TestModel2.vs, TestModel2.tg, TestModel2.Es, TestModel2.eps0, TestModel2.a
+
+
 
     def laplace_value(self, s):
         vs, tg, Es, eps0, a = TestModel2.get_predefined_constants()
@@ -240,27 +265,29 @@ class TestModel2:
         return F
 
     def inverted_value(self, t, bessel_len=20):
-        vs, tg, Es, eps0, a = TestModel2.get_predefined_constants()
+        vs, tg, Es, eps0, a = type(self).get_predefined_constants()
 
-        alpha2 = np.zeros(shape=bessel_len)
-        for n in range(bessel_len):
-            def eqn(x):
-                return J1(x) - (1-vs)/(1-2*vs)*x*J0(x)
-            # Use (n+1)*pi instead of n*pi bc python is zero-indexed unlike Matlab
-            alpha2[n] = scipy.optimize.fsolve(func=eqn, x0=(n+1)*np.pi)
+        if bessel_len > type(self).saved_bessel_len:
+            self.setup_constants(bessel_len=bessel_len)
+        A_vals = type(self).A_vals
+        alpha2_vals = type(self).alpha2_vals
 
         summation = 0
         for n in range(bessel_len):
-            temp = 1-2*vs
-            An = (1-vs)*temp/(1+vs) * 1/(temp*temp*alpha2[n]-temp)
-            summation += An * np.exp(-alpha2[n]*t/tg)
+            summation += A_vals[n] * np.exp(-alpha2_vals[n]*t/tg)
 
+        """
         F = np.pi * a
         F = np.pi * a*a
         F = np.pi * a*a * -Es
         F = np.pi * a*a * -Es * eps0
         F = np.pi * a*a * -Es * eps0 * (1 + summation)
+        """
+        F = np.pi * a*a * -Es * eps0 * (1 + summation)
         return F
+
+    def inverted_value_units(self):
+        return "N"  # Newtons
 
 
 

@@ -3,6 +3,9 @@
 # Tucker McClure (2021). Numerical Inverse Laplace Transform (https://www.mathworks.com/matlabcentral/fileexchange/39035-numerical-inverse-laplace-transform), MATLAB Central File Exchange. Retrieved April 19, 2021.
 # The original paper was:
 # Abate, Joseph, and Ward Whitt. "A Unified Framework for Numerically Inverting Laplace Transforms." INFORMS Journal of Computing, vol. 18.4 (2006): 408-421. Print.
+# Online version of the paper can be found at:
+# http://www.columbia.edu/~ww2040/allpapers.html
+# http://www.columbia.edu/~ww2040/AbateUnified2006.pdf
 
 import numpy as np
 from numpy import prod  # Do direct imports to match matlab functions exactly (i.e. prod(x) as opposed to np.prod(.))

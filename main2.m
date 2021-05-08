@@ -215,17 +215,20 @@ ts=[-2:0.01:2];
 
 %% LAPLACE INVERSION - NUMERICAL  <-- uses external library
 F = sigbar;
+func = matlabFunction(F);
 % inputting a value of time=0 doesn't error (just returns None/NaN), but takes longer (about 2x as much) on python; not really MATLAB though
 times = [0.05:.05:5]';
 %times=[2,3]';
-inv_tal = talbot_inversion(matlabFunction(F), times);  % Talbot doesn't perform well for small times (has a lot of NaNs)
+inv_tal = talbot_inversion(func, times);  % Talbot doesn't perform well for small times (has a lot of NaNs)
 tic
-inv_eul = euler_inversion(matlabFunction(F), times);  
+inv_eul =  euler_inversion(func, times);  
 [times inv_tal inv_eul]
 toc
 %f_s = matlabFunction(F); t=times; M=32;
 
 %%
-figure;
-plot(times, inv_eul)
+figure; hold on; grid on;
+plot(times, inv_eul, 'rx','DisplayName','Euler')
+plot(times, inv_tal, 'bo','DisplayName','Talbot')
+legend('show')
 

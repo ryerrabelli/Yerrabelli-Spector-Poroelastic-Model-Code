@@ -66,7 +66,7 @@ def plot_laplace_analysis(func,
             is_in_num_times_too = np.isin(input_times, input_times_anal, assume_unique=assume_times_unique)
             #inversion_error = (inverted_vals_numerical-inverted_vals_analytical)/inverted_vals_analytical
             inversion_error = (inverted_vals_numerical[is_in_anal_times_too] - inverted_vals_analytical[is_in_num_times_too]) \
-                             / inverted_vals_analytical[is_in_num_times_too]
+                              / inverted_vals_analytical[is_in_num_times_too]
 
     # Plotting
     fig, axs = plt.subplots(2,2)
@@ -104,8 +104,10 @@ def plot_laplace_analysis(func,
         ax11.grid()
         ax11.title.set_text("Analytical Inverse Laplace")
 
+        if False and  is_in_anal_times_too.any():
+            ax10.plot(plot_times_anal[is_in_num_times_too], inversion_error * 100.0, ".-g")
         if is_in_anal_times_too.any():
-            ax10.plot(plot_times_anal[is_in_num_times_too], inversion_error*100.0, ".-g")
+            ax10.plot(plot_times_anal[is_in_num_times_too], inversion_error, ".-g")
             if min(abs(inversion_error * 100.0)) < 0.1:
                 ax10.set_ylim([-100, 100])
             else:
@@ -125,7 +127,7 @@ def plot_laplace_analysis(func,
         ax10.set_xlim([0, None])
         ax10.set_ylabel(func_name["t"])
         #ax10.set_ylabel("% error: (Numer-Anal)/Anal")
-        ax10.set_ylabel(r"% $error=\frac{F_{Numer}(t)-F_{Anal}(t)}{F_{Anal}(t)}$")
+        ax10.set_ylabel(r"% $error=\frac{f_{Numer}(t)-f_{Anal}(t)}{f_{Anal}(t)}$")
         # Note- if a y value is 0.5, then percentformatter makes it 0.5% not 50%.
         # Thus have to multiply by 100 before getting the y values.
         ax10.yaxis.set_major_formatter(mtick.PercentFormatter())
@@ -133,5 +135,5 @@ def plot_laplace_analysis(func,
         ax10.grid()
         ax10.title.set_text("Percent Error")
 
-    return fig
+    return fig, laplace_vals, inverted_vals_numerical, inverted_vals_analytical
 

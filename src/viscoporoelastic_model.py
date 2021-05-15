@@ -2,14 +2,14 @@ import numpy as np
 import scipy.optimize
 from numpy import exp
 from numpy import sqrt
-import scipy.special as sp
+import scipy as sp
 
 
 # Numpy besseli (i0) function doesn't support complex values and only has order 0
-def I0(x): return sp.iv(0, x) #return np.i0(x); #besseli(0, x)
-def I1(x): return sp.iv(1, x) #besseli(1, x)
-def J0(x): return sp.jv(0, x)
-def J1(x): return sp.jv(1, x)
+def I0(x): return sp.special.iv(0, x) #return np.i0(x); #besseli(0, x)
+def I1(x): return sp.special.iv(1, x) #besseli(1, x)
+def J0(x): return sp.special.jv(0, x)
+def J1(x): return sp.special.jv(1, x)
 def ln(x): return np.log(x)  #import math #return math.log(x)
 
 
@@ -290,4 +290,39 @@ class TestModel2:
         return "Newtons"  # Newtons
 
 
+class TestModel3(TestModel2):
+    #@staticmethod
+    #def characteristic_eqn(*args, **kwargs): return TestModel2.characteristic_eqn(*args, **kwargs)
 
+    def laplace_value(self, s):
+        """
+        Overrides super function
+        :param s:
+        :return:
+        """
+        vs, tg, Es, eps0, a = TestModel3.get_predefined_constants()
+        eps = -eps0/s
+        alpha = (1-2*vs)/(2*(1+vs))
+        U_a = -eps/2 * (I0(sqrt(s))-4*alpha*I1(sqrt(s))/sqrt(s)) / (I0(sqrt(s))-2*alpha*I1(sqrt(s))/sqrt(s))
+        return U_a
+
+    def inverted_value(self, t, bessel_len=20):
+        """
+        Overrides super function
+        :return:
+        """
+        vs, tg, Es, eps0, a = type(self).get_predefined_constants()
+
+        if bessel_len > type(self).saved_bessel_len:
+            self.setup_constants(bessel_len=bessel_len)
+        A_vals = type(self).A_vals
+        alpha2_vals = type(self).alpha2_vals
+
+        summation_a = 0
+        for n in range(bessel_len):
+            summation_a += np.exp(-alpha2_vals[n]*t/tg)/(alpha2_vals[n]-1)
+
+        return summation_a
+
+    def inverted_value_units(self):
+        return "unitless"  # displacement/a is m/m = unitless

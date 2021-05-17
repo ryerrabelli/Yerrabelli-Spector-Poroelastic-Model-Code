@@ -230,17 +230,17 @@ class TestModel2:
     alpha2_vals=None
     A_vals=None
     saved_bessel_len = 0
-    @staticmethod
-    def characteristic_eqn(x):
-        vs, tg, Es, eps0, a = TestModel2.get_predefined_constants()
+
+    def characteristic_eqn(self,x):
+        vs, tg, Es, eps0, a = self.get_predefined_constants()
         return J1(x) - (1 - vs) / (1 - 2 * vs) * x * J0(x)
 
     def setup_constants(self, bessel_len=20):
-        vs, tg, Es, eps0, a = TestModel2.get_predefined_constants()
+        vs, tg, Es, eps0, a = self.get_predefined_constants()
         alpha2_vals = np.zeros(shape=bessel_len)
         for n in range(bessel_len):
             # Use (n+1)*pi instead of n*pi bc python is zero-indexed unlike Matlab
-            alpha2_vals[n] = scipy.optimize.fsolve(func=type(self).characteristic_eqn, x0=(n + 1) * np.pi)
+            alpha2_vals[n] = scipy.optimize.fsolve(func=self.characteristic_eqn, x0=(n + 1) * np.pi)
 
         A_vals = np.zeros(shape=bessel_len)
         for n in range(bessel_len):
@@ -251,21 +251,23 @@ class TestModel2:
         type(self).A_vals = A_vals
         type(self).saved_bessel_len = bessel_len
 
-    @staticmethod
-    def get_predefined_constants():
-        return TestModel2.vs, TestModel2.tg, TestModel2.Es, TestModel2.eps0, TestModel2.a
+    #@staticmethod
+    #def get_predefined_constants():
+    #    return TestModel2.vs, TestModel2.tg, TestModel2.Es, TestModel2.eps0, TestModel2.a
 
+    def get_predefined_constants(self):
+        return self.vs, self.tg, self.Es, self.eps0, self.a
 
 
     def laplace_value(self, s):
-        vs, tg, Es, eps0, a = TestModel2.get_predefined_constants()
+        vs, tg, Es, eps0, a = self.get_predefined_constants()  #type(self).get_predefined_constants()
         eps = -eps0/s
         alpha = (1-2*vs)/(2*(1+vs))
         F = eps * (3*I0(sqrt(s))-8*alpha*I1(sqrt(s))/sqrt(s)) / (I0(sqrt(s))-2*alpha*I1(sqrt(s))/sqrt(s))
         return F
 
     def inverted_value(self, t, bessel_len=20):
-        vs, tg, Es, eps0, a = type(self).get_predefined_constants()
+        vs, tg, Es, eps0, a = self.get_predefined_constants()
 
         if bessel_len > type(self).saved_bessel_len:
             self.setup_constants(bessel_len=bessel_len)
@@ -300,7 +302,7 @@ class TestModel3(TestModel2):
         :param s:
         :return:
         """
-        vs, tg, Es, eps0, a = TestModel3.get_predefined_constants()
+        vs, tg, Es, eps0, a = self.get_predefined_constants()  #TestModel3.get_predefined_constants()
         eps = -eps0/s
         alpha = (1-2*vs)/(2*(1+vs))
         U_a = -eps/2 * (I0(sqrt(s))-4*alpha*I1(sqrt(s))/sqrt(s)) / (I0(sqrt(s))-2*alpha*I1(sqrt(s))/sqrt(s))
@@ -311,7 +313,7 @@ class TestModel3(TestModel2):
         Overrides super function
         :return:
         """
-        vs, tg, Es, eps0, a = type(self).get_predefined_constants()
+        vs, tg, Es, eps0, a = self.get_predefined_constants() #type(self).get_predefined_constants()
 
         if bessel_len > type(self).saved_bessel_len:
             self.setup_constants(bessel_len=bessel_len)

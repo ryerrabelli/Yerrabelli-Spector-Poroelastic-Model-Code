@@ -328,3 +328,36 @@ class TestModel3(TestModel2):
 
     def inverted_value_units(self):
         return "unitless"  # displacement/a is m/m = unitless
+
+
+class TestModel4:   # Spector sent this to me May 29, 2021
+    #@staticmethod
+    #def characteristic_eqn(*args, **kwargs): return TestModel2.characteristic_eqn(*args, **kwargs)
+
+    v = 0
+    strain_rate = 1e-3  # s^-1
+    t0_tg = 0.1
+    tg = 7e3
+
+    def get_predefined_constants(self):
+        return self.v, self.strain_rate, self.t0_tg, self.tg
+
+    def laplace_value(self, s):
+        """
+        Overrides super function
+        :param s:
+        :return:
+        """
+        v, strain_rate, t0_tg, tg = self.get_predefined_constants()
+        t0 = t0_tg * tg
+        eps0 = strain_rate * t0
+        C0 = (1-2*v)/(1-v)
+
+        # TODO: Confirm below epszz expression with Dr. Spector as this seems to be different from the one for the
+        #  viscoporoelastic model
+        epszz = eps0*(1 - exp(-s*t0))/(s*s);  ##  Laplace transform of the axial strain
+        f_prime = epszz * (3*I0(sqrt(s))-4*C0*I1(sqrt(s))/sqrt(s)) / (I0(sqrt(s))-C0*I1(sqrt(s))/sqrt(s))
+        return f_prime
+
+    def inverted_value_units(self):
+        return "unitless"  # displacement/a is m/m = unitless

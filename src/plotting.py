@@ -50,7 +50,9 @@ def plot_laplace_analysis(func,
 
     #inverted_vals_analytical = None if inv_func_anal is None else inv_func_anal(input_times_anal)
     #inversion_error = (inverted_vals_numerical-inverted_vals_analytical)/inverted_vals_numerical
-    if inv_func_anal is not None:
+    if inv_func_anal is None:
+        inverted_vals_analytical = None
+    else:
         if plot_times_anal is None:
             plot_times_anal = plot_times
         if input_times_anal is None:
@@ -69,16 +71,23 @@ def plot_laplace_analysis(func,
                               / inverted_vals_analytical[is_in_num_times_too]
 
     # Plotting
-    fig, axs = plt.subplots(2,2)
+    subplot_row_ct = 1 if inv_func_anal is None else 2
+    #subplot_row_ct = 1
+    subplot_col_ct = 2
+    fig, axs = plt.subplots(subplot_row_ct, subplot_col_ct)
     fig.tight_layout()
     fig.set_figwidth(9)
-    fig.set_figheight(3*2+1)
+    fig.set_figheight(4*subplot_row_ct-1)
     fig.set_dpi(150)
 
-    ax00 = axs[0, 0]
-    ax01 = axs[0, 1]
-    ax10 = axs[1, 0]
-    ax11 = axs[1, 1]
+    if subplot_row_ct == 1:
+        ax00 = axs[0]
+        ax01 = axs[1]
+    else:
+        ax00 = axs[0, 0]
+        ax01 = axs[0, 1]
+        ax10 = axs[1, 0]
+        ax11 = axs[1, 1]
 
     ax00.plot(s_vals, laplace_vals, ".-b")
     #ax00.plot(s_vals, laplace_vals*s_vals, ".-b")

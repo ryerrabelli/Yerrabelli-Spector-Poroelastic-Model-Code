@@ -201,6 +201,8 @@ class ViscoporoelasticModel(LaplaceModel):
         #  1
         #eps0 = strain_rate * t0
         t0 = eps0/strain_rate;
+        # TODO: Confirm the TestModel4 epszz expression from Dr. Spector as this seems to be different from the one
+        #  for the viscoporoelastic model
         epszz = 1 - exp(-s*t0)/(s*s);  ##  Laplace transform of the axial strain
 
 
@@ -493,11 +495,12 @@ class TestModel4(LaplaceModel):   # Dr. Spector sent this to me May 29, 2021
         :param s:
         :return:
         """
-        #v, strain_rate, t0_tg, tg = self.get_predefined_constants()
+        v, strain_rate, t0_tg, tg = self.get_parameters()
         t0, eps0, C0 = self.get_calculable_constants()
 
-        # TODO: Confirm below epszz expression with Dr. Spector as this seems to be different from the one for the
-        #  viscoporoelastic model
+        # TODO: Confirm the TestModel4 epszz expression from Dr. Spector as this seems to be different from the one
+        #  for the viscoporoelastic model
+
         epszz = eps0*(1 - exp(-s*t0))/(s*s);  ##  Laplace transform of the axial strain
         f_prime = epszz * (3*I0(sqrt(s))-4*C0*I1(sqrt(s))/sqrt(s)) / (I0(sqrt(s))-C0*I1(sqrt(s))/sqrt(s))
         return f_prime

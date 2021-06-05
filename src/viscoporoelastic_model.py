@@ -34,29 +34,67 @@ Err = 1;
 
 class LaplaceModel(abc.ABC):
     @abc.abstractmethod
-    def get_predefined_constants(self): pass
+    def get_predefined_constants(self): raise NotImplementedError()
 
     @staticmethod
     @abc.abstractmethod
-    def get_predefined_constant_names(self): pass
+    def get_predefined_constant_names(self): raise NotImplementedError()
 
-    #@abc.abstractmethod
     def get_parameters(self):
         return ()  # zero-length tuple, aka tuple()
 
     @staticmethod
-    #@abc.abstractmethod
-    def get_parameter_names(self):
+    def get_parameter_names():
+        return ()  # zero-length tuple, aka tuple()
+
+    def get_calculable_constants(self):
+        return ()  # zero-length tuple, aka tuple()
+
+    @staticmethod
+    def get_calculable_constant_names():
         return ()  # zero-length tuple, aka tuple()
 
     @abc.abstractmethod
-    def laplace_value(self, s): pass
+    def laplace_value(self, s): return NotImplemented
+
+    def inverted_value_units(self): return NotImplemented #return "N/A"
+
+    def get_all_names_and_vars(self):
+        tm = self
+
+        #dict(zip(type(tm).get_predefined_constant_names(), tm.get_predefined_constants()))
+        #dict(zip(type(tm).get_parameter_names(), tm.get_parameters()))
+        #dict(zip(type(tm).get_calculable_constant_names(), tm.get_calculable_constants()))
+        """return dict(zip(
+            type(tm).get_predefined_constant_names() + type(tm).get_parameter_names() + type(
+                tm).get_calculable_constant_names(),
+            tm.get_predefined_constants() + tm.get_parameters() + tm.get_calculable_constants()
+        ))"""
+
+        return dict(zip(
+            sum(
+                [
+                    type(tm).get_predefined_constant_names(),
+                    type(tm).get_parameter_names(),
+                    type(tm).get_calculable_constant_names(),
+                ],
+                tuple()  # "start" has to be an empty tuple (default is int 0, which throws an error when with tuples)
+            ),
+            sum(
+                [
+                    tm.get_predefined_constants(),
+                    tm.get_parameters(),
+                    tm.get_calculable_constants(),
+                ],
+                tuple()  # "start" has to be an empty tuple (default is int 0, which throws an error when with tuples)
+            ),
+        ))
+
 
 
 class AnalyticallyInvertableModel(LaplaceModel):
     def inverted_value(self, t): pass
 
-    def inverted_value_units(self): pass
 
 
 class ViscoporoelasticModel(LaplaceModel):
@@ -97,8 +135,7 @@ class ViscoporoelasticModel(LaplaceModel):
     def get_parameters(self): return self.get_fitted_parameters()
 
     @staticmethod
-    def get_parameter_names(self): return type(self).get_fitted_parameter_names()
-
+    def get_parameter_names(): return ViscoporoelasticModel.get_fitted_parameter_names()
 
     @staticmethod
     def get_var_categories():
@@ -239,7 +276,14 @@ class ViscoporoelasticModel(LaplaceModel):
 class TestModel(LaplaceModel):
     alpha = 0.5; tg = 7e-3; strain_rate = 1e-4; t0 = 1e3
 
-    def laplace_value(self, s=None, alpha=None, tg=None, strain_rate=None, t0=None):  #, s, alpha=0.5, tg=7e-3, strain_rate=1e-4, t0=1e3
+    def get_predefined_constants(self):
+        return self.alpha, self.tg, self.strain_rate, self.t0
+
+    @staticmethod
+    def get_predefined_constant_names(self):
+        return "alpha", "tg", "strain_rate", "t0"
+
+    def laplace_value(self, s, alpha=None, tg=None, strain_rate=None, t0=None):  #, s, alpha=0.5, tg=7e-3, strain_rate=1e-4, t0=1e3
         if alpha is None:
             alpha = self.alpha
         if tg is None:
@@ -295,10 +339,20 @@ class TestModel2(AnalyticallyInvertableModel):
     def get_predefined_constant_names(self):
         return "vs", "tg", "Es", "eps0", "a"
 
+    def get_calculable_constants(self):
+        vs, tg, Es, eps0, a = self.get_predefined_constants()  #type(self).get_predefined_constants()
+        alpha = (1-2*vs)/(2*(1+vs))
+        return alpha,  # 1-length tuple
+
+    @staticmethod
+    def get_calculable_constant_names():
+        return "alpha",  # 1-length tuple
+
     def laplace_value(self, s):
         vs, tg, Es, eps0, a = self.get_predefined_constants()  #type(self).get_predefined_constants()
+        alpha, = self.get_calculable_constants()
+
         eps = -eps0/s
-        alpha = (1-2*vs)/(2*(1+vs))
         F = eps * (3*I0(sqrt(s))-8*alpha*I1(sqrt(s))/sqrt(s)) / (I0(sqrt(s))-2*alpha*I1(sqrt(s))/sqrt(s))
         return F
 
@@ -328,7 +382,7 @@ class TestModel2(AnalyticallyInvertableModel):
         return "Newtons"  # Newtons
 
 
-class TestModel3(AnalyticallyInvertableModel):
+class TestModel3(TestModel2):
     #@staticmethod
     #def characteristic_eqn(*args, **kwargs): return TestModel2.characteristic_eqn(*args, **kwargs)
 
@@ -339,8 +393,9 @@ class TestModel3(AnalyticallyInvertableModel):
         :return:
         """
         vs, tg, Es, eps0, a = self.get_predefined_constants()  #TestModel3.get_predefined_constants()
+        alpha, = self.get_calculable_constants()
+
         eps = -eps0/s
-        alpha = (1-2*vs)/(2*(1+vs))
         U_a = -eps/2 * (I0(sqrt(s))-4*alpha*I1(sqrt(s))/sqrt(s)) / (I0(sqrt(s))-2*alpha*I1(sqrt(s))/sqrt(s))
         return U_a
 
@@ -366,7 +421,7 @@ class TestModel3(AnalyticallyInvertableModel):
         return "unitless"  # displacement/a is m/m = unitless
 
 
-class TestModel4(LaplaceModel):   # Spector sent this to me May 29, 2021
+class TestModel4(LaplaceModel):   # Dr. Spector sent this to me May 29, 2021
     #@staticmethod
     #def characteristic_eqn(*args, **kwargs): return TestModel2.characteristic_eqn(*args, **kwargs)
 
@@ -399,8 +454,8 @@ class TestModel4(LaplaceModel):   # Spector sent this to me May 29, 2021
         :param s:
         :return:
         """
-        v, strain_rate, t0_tg, tg = self.get_predefined_constants()
-        t0, eps0, C0 = self.get_calculatable_constants()
+        #v, strain_rate, t0_tg, tg = self.get_predefined_constants()
+        t0, eps0, C0 = self.get_calculable_constants()
 
         # TODO: Confirm below epszz expression with Dr. Spector as this seems to be different from the one for the
         #  viscoporoelastic model

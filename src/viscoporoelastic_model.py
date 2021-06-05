@@ -3,6 +3,7 @@ import scipy.optimize
 from numpy import exp
 from numpy import sqrt
 import scipy as sp
+import abc
 
 
 # Numpy besseli (i0) function doesn't support complex values and only has order 0
@@ -31,7 +32,34 @@ Err = 1;
 """
 
 
-class ViscoporoelasticModel:
+class LaplaceModel(abc.ABC):
+    @abc.abstractmethod
+    def get_predefined_constants(self): pass
+
+    @staticmethod
+    @abc.abstractmethod
+    def get_predefined_constant_names(self): pass
+
+    #@abc.abstractmethod
+    def get_parameters(self):
+        return ()  # zero-length tuple, aka tuple()
+
+    @staticmethod
+    #@abc.abstractmethod
+    def get_parameter_names(self):
+        return ()  # zero-length tuple, aka tuple()
+
+    @abc.abstractmethod
+    def laplace_value(self, s): pass
+
+
+class AnalyticallyInvertableModel(LaplaceModel):
+    def inverted_value(self, t): pass
+
+    def inverted_value_units(self): pass
+
+
+class ViscoporoelasticModel(LaplaceModel):
     ## PARAMETERS
     ## Predefined constants
     eps0 = 0.1;  # 10 percent
@@ -51,21 +79,26 @@ class ViscoporoelasticModel:
         self.Vrtheta = 1;  # Not actually v, but greek nu (represents Poisson's ratio)
         self.Err = 1;
 
+    def get_predefined_constants(self):
+        return ViscoporoelasticModel.eps0, ViscoporoelasticModel.strain_rate, ViscoporoelasticModel.Vrz, ViscoporoelasticModel.Ezz
+
     @staticmethod
     def get_predefined_constant_names():
         return "eps0", "strain_rate", "Vrz", "Ezz"
 
-    @staticmethod
-    def get_predefined_constants():
-        return ViscoporoelasticModel.eps0, ViscoporoelasticModel.strain_rate, ViscoporoelasticModel.Vrz, ViscoporoelasticModel.Ezz
+    # This is not a static method as fitted parameters depend on the instance (note- the names are still same though)
+    def get_fitted_parameters(self):
+        return self.c, self.tau1, self.tau2, self.tg, self.Vrtheta, self.Err;
 
     @staticmethod
     def get_fitted_parameter_names():
         return "c", "tau1", "tau2", "tg", "Vrtheta", "Err"
 
-    # This is not a static method as fitted parameters depend on the instance (note- the names are still same though)
-    def get_fitted_parameters(self):
-        return self.c, self.tau1, self.tau2, self.tg, self.Vrtheta, self.Err;
+    def get_parameters(self): return self.get_fitted_parameters()
+
+    @staticmethod
+    def get_parameter_names(self): return type(self).get_fitted_parameter_names()
+
 
     @staticmethod
     def get_var_categories():
@@ -203,7 +236,7 @@ class ViscoporoelasticModel:
             print(t2)
 
 
-class TestModel:
+class TestModel(LaplaceModel):
     alpha = 0.5; tg = 7e-3; strain_rate = 1e-4; t0 = 1e3
 
     def laplace_value(self, s=None, alpha=None, tg=None, strain_rate=None, t0=None):  #, s, alpha=0.5, tg=7e-3, strain_rate=1e-4, t0=1e3
@@ -221,7 +254,7 @@ class TestModel:
         return F
 
 
-class TestModel2:
+class TestModel2(AnalyticallyInvertableModel):
     vs = 0
     tg = 7e3  # sec
     Es = 7e6  # Pa
@@ -258,6 +291,9 @@ class TestModel2:
     def get_predefined_constants(self):
         return self.vs, self.tg, self.Es, self.eps0, self.a
 
+    @staticmethod
+    def get_predefined_constant_names(self):
+        return "vs", "tg", "Es", "eps0", "a"
 
     def laplace_value(self, s):
         vs, tg, Es, eps0, a = self.get_predefined_constants()  #type(self).get_predefined_constants()
@@ -292,7 +328,7 @@ class TestModel2:
         return "Newtons"  # Newtons
 
 
-class TestModel3(TestModel2):
+class TestModel3(AnalyticallyInvertableModel):
     #@staticmethod
     #def characteristic_eqn(*args, **kwargs): return TestModel2.characteristic_eqn(*args, **kwargs)
 
@@ -330,17 +366,32 @@ class TestModel3(TestModel2):
         return "unitless"  # displacement/a is m/m = unitless
 
 
-class TestModel4:   # Spector sent this to me May 29, 2021
+class TestModel4(LaplaceModel):   # Spector sent this to me May 29, 2021
     #@staticmethod
     #def characteristic_eqn(*args, **kwargs): return TestModel2.characteristic_eqn(*args, **kwargs)
 
     v = 0
-    strain_rate = 1e-3  # s^-1
+    strain_rate = 0.0003  #1e-3  # s^-1
     t0_tg = 0.1
-    tg = 7e3
+    tg = 1000  #7e3  # sec
 
     def get_predefined_constants(self):
         return self.v, self.strain_rate, self.t0_tg, self.tg
+
+    @staticmethod
+    def get_predefined_constant_names():
+        return "v", "strain_rate", "t0/tg", "tg"
+
+    def get_calculable_constants(self):
+        v, strain_rate, t0_tg, tg = self.get_predefined_constants()
+        t0 = t0_tg * tg
+        eps0 = strain_rate * t0
+        C0 = (1-2*v)/(1-v)
+        return t0, eps0, C0
+
+    @staticmethod
+    def get_calculable_constant_names():
+        return "t0", "eps0", "C0"
 
     def laplace_value(self, s):
         """
@@ -349,9 +400,7 @@ class TestModel4:   # Spector sent this to me May 29, 2021
         :return:
         """
         v, strain_rate, t0_tg, tg = self.get_predefined_constants()
-        t0 = t0_tg * tg
-        eps0 = strain_rate * t0
-        C0 = (1-2*v)/(1-v)
+        t0, eps0, C0 = self.get_calculatable_constants()
 
         # TODO: Confirm below epszz expression with Dr. Spector as this seems to be different from the one for the
         #  viscoporoelastic model
@@ -359,5 +408,3 @@ class TestModel4:   # Spector sent this to me May 29, 2021
         f_prime = epszz * (3*I0(sqrt(s))-4*C0*I1(sqrt(s))/sqrt(s)) / (I0(sqrt(s))-C0*I1(sqrt(s))/sqrt(s))
         return f_prime
 
-    def inverted_value_units(self):
-        return "unitless"  # displacement/a is m/m = unitless

@@ -33,12 +33,13 @@ Err = 1;
 
 
 class LaplaceModel(abc.ABC):
+    @classmethod
     @abc.abstractmethod
-    def get_predefined_constants(self): raise NotImplementedError()
+    def get_predefined_constants(cls): raise NotImplementedError()
 
     @staticmethod
     @abc.abstractmethod
-    def get_predefined_constant_names(self): raise NotImplementedError()
+    def get_predefined_constant_names(): raise NotImplementedError()
 
     def get_parameters(self):
         return ()  # zero-length tuple, aka tuple()
@@ -57,7 +58,8 @@ class LaplaceModel(abc.ABC):
     @abc.abstractmethod
     def laplace_value(self, s): return NotImplemented
 
-    def inverted_value_units(self): return NotImplemented #return "N/A"
+    @classmethod
+    def inverted_value_units(cls): return NotImplemented #return "N/A"
 
     def get_all_names_and_vars(self):
         tm = self
@@ -74,9 +76,9 @@ class LaplaceModel(abc.ABC):
         return dict(zip(
             sum(
                 [
-                    type(tm).get_predefined_constant_names(),
-                    type(tm).get_parameter_names(),
-                    type(tm).get_calculable_constant_names(),
+                    tm.get_predefined_constant_names(),
+                    tm.get_parameter_names(),
+                    tm.get_calculable_constant_names(),
                 ],
                 tuple()  # "start" has to be an empty tuple (default is int 0, which throws an error when with tuples)
             ),
@@ -91,10 +93,8 @@ class LaplaceModel(abc.ABC):
         ))
 
 
-
-class AnalyticallyInvertableModel(LaplaceModel):
-    def inverted_value(self, t): pass
-
+class AnalyticallyInvertableModel(LaplaceModel, abc.ABC):
+    def inverted_value(self, t): return NotImplemented
 
 
 class ViscoporoelasticModel(LaplaceModel):
@@ -117,8 +117,10 @@ class ViscoporoelasticModel(LaplaceModel):
         self.Vrtheta = 1;  # Not actually v, but greek nu (represents Poisson's ratio)
         self.Err = 1;
 
-    def get_predefined_constants(self):
-        return ViscoporoelasticModel.eps0, ViscoporoelasticModel.strain_rate, ViscoporoelasticModel.Vrz, ViscoporoelasticModel.Ezz
+    @classmethod
+    def get_predefined_constants(cls):
+        return cls.eps0, cls.strain_rate, cls.Vrz, cls.Ezz
+        #return type(self).eps0, type(self).strain_rate, type(self).Vrz, type(self).Ezz
 
     @staticmethod
     def get_predefined_constant_names():
@@ -134,13 +136,13 @@ class ViscoporoelasticModel(LaplaceModel):
 
     def get_parameters(self): return self.get_fitted_parameters()
 
-    @staticmethod
-    def get_parameter_names(): return ViscoporoelasticModel.get_fitted_parameter_names()
+    @classmethod
+    def get_parameter_names(cls): return cls.get_fitted_parameter_names()
 
-    @staticmethod
-    def get_var_categories():
-        return ("Constant",)    * len(ViscoporoelasticModel.get_predefined_constant_names()) + \
-               ("FittedParam",) * len(ViscoporoelasticModel.get_fitted_parameter_names())
+    @classmethod
+    def get_var_categories(cls):
+        return ("Constant",)    * len(cls.get_predefined_constant_names()) + \
+               ("FittedParam",) * len(cls.get_fitted_parameter_names())
 
     def set_fitted_parameters(self,
                           ## Fitted parameters (to be determined by experimental fitting to
@@ -191,7 +193,7 @@ class ViscoporoelasticModel(LaplaceModel):
         """
         c, tau1, tau2, tg, Vrtheta, Err = self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, tg=tg, Vrtheta=Vrtheta, Err=Err)
 
-        eps0, strain_rate, Vrz, Ezz = ViscoporoelasticModel.get_predefined_constants()
+        eps0, strain_rate, Vrz, Ezz = self.get_predefined_constants()
 
 
         #print(s)
@@ -273,14 +275,15 @@ class ViscoporoelasticModel(LaplaceModel):
             print(t2)
 
 
-class TestModel(LaplaceModel):
+class TestModel1(LaplaceModel):
     alpha = 0.5; tg = 7e-3; strain_rate = 1e-4; t0 = 1e3
 
-    def get_predefined_constants(self):
-        return self.alpha, self.tg, self.strain_rate, self.t0
+    @classmethod
+    def get_predefined_constants(cls):
+        return cls.alpha, cls.tg, cls.strain_rate, cls.t0
 
     @staticmethod
-    def get_predefined_constant_names(self):
+    def get_predefined_constant_names():
         return "alpha", "tg", "strain_rate", "t0"
 
     def laplace_value(self, s, alpha=None, tg=None, strain_rate=None, t0=None):  #, s, alpha=0.5, tg=7e-3, strain_rate=1e-4, t0=1e3
@@ -299,6 +302,7 @@ class TestModel(LaplaceModel):
 
 
 class TestModel2(AnalyticallyInvertableModel):
+    """
     vs = 0
     tg = 7e3  # sec
     Es = 7e6  # Pa
@@ -307,13 +311,52 @@ class TestModel2(AnalyticallyInvertableModel):
     alpha2_vals=None
     A_vals=None
     saved_bessel_len = 0
+    """
 
-    def characteristic_eqn(self,x):
-        vs, tg, Es, eps0, a = self.get_predefined_constants()
+    def __init__(self):
+        self.vs = 0;
+        self.tg = 7e3  # sec
+        self.Es = 7e6  # Pa
+        self.eps0 = 0.001
+        self.a = 0.003  # meters
+
+        self.alpha2_vals = None
+        self.A_vals = None
+        self.saved_bessel_len = 0
+
+    #@staticmethod
+    #def get_predefined_constants():
+    #    return TestModel2.vs, TestModel2.tg, TestModel2.Es, TestModel2.eps0, TestModel2.a
+    @classmethod
+    def get_predefined_constants(cls):
+        return ()   # zero-length tuple
+
+    @staticmethod
+    def get_predefined_constant_names():
+        return ()   # zero-length tuple
+
+    def get_parameters(self):
+        return self.vs, self.tg, self.Es, self.eps0, self.a
+
+    @classmethod
+    def get_parameter_names(cls):
+        return "vs", "tg", "Es", "eps0", "a"
+
+    def get_calculable_constants(self):
+        vs, tg, Es, eps0, a = self.get_parameters()  #type(self).get_predefined_constants()
+        alpha = (1-2*vs)/(2*(1+vs))
+        return alpha,  # 1-length tuple
+
+    @staticmethod
+    def get_calculable_constant_names():
+        return "alpha",  # 1-length tuple
+
+    def characteristic_eqn(self, x):
+        vs, tg, Es, eps0, a = self.get_parameters()
         return J1(x) - (1 - vs) / (1 - 2 * vs) * x * J0(x)
 
     def setup_constants(self, bessel_len=20):
-        vs, tg, Es, eps0, a = self.get_predefined_constants()
+        vs, tg, Es, eps0, a = self.get_parameters()
         alpha2_vals = np.zeros(shape=bessel_len)
         for n in range(bessel_len):
             # Use (n+1)*pi instead of n*pi bc python is zero-indexed unlike Matlab
@@ -324,32 +367,12 @@ class TestModel2(AnalyticallyInvertableModel):
             temp = 1 - 2 * vs
             A_vals[n] = (1 - vs) * temp / (1 + vs) * 1 / (temp * temp * alpha2_vals[n] - temp)
 
-        type(self).alpha2_vals=alpha2_vals
-        type(self).A_vals = A_vals
-        type(self).saved_bessel_len = bessel_len
-
-    #@staticmethod
-    #def get_predefined_constants():
-    #    return TestModel2.vs, TestModel2.tg, TestModel2.Es, TestModel2.eps0, TestModel2.a
-
-    def get_predefined_constants(self):
-        return self.vs, self.tg, self.Es, self.eps0, self.a
-
-    @staticmethod
-    def get_predefined_constant_names(self):
-        return "vs", "tg", "Es", "eps0", "a"
-
-    def get_calculable_constants(self):
-        vs, tg, Es, eps0, a = self.get_predefined_constants()  #type(self).get_predefined_constants()
-        alpha = (1-2*vs)/(2*(1+vs))
-        return alpha,  # 1-length tuple
-
-    @staticmethod
-    def get_calculable_constant_names():
-        return "alpha",  # 1-length tuple
+        self.alpha2_vals=alpha2_vals
+        self.A_vals = A_vals
+        self.saved_bessel_len = bessel_len
 
     def laplace_value(self, s):
-        vs, tg, Es, eps0, a = self.get_predefined_constants()  #type(self).get_predefined_constants()
+        vs, tg, Es, eps0, a = self.get_parameters()  #type(self).get_predefined_constants()
         alpha, = self.get_calculable_constants()
 
         eps = -eps0/s
@@ -357,12 +380,12 @@ class TestModel2(AnalyticallyInvertableModel):
         return F
 
     def inverted_value(self, t, bessel_len=20):
-        vs, tg, Es, eps0, a = self.get_predefined_constants()
+        vs, tg, Es, eps0, a = self.get_parameters()
 
-        if bessel_len > type(self).saved_bessel_len:
+        if bessel_len > self.saved_bessel_len:
             self.setup_constants(bessel_len=bessel_len)
-        A_vals = type(self).A_vals
-        alpha2_vals = type(self).alpha2_vals
+        A_vals = self.A_vals
+        alpha2_vals = self.alpha2_vals
 
         summation = 0
         for n in range(bessel_len):
@@ -378,7 +401,8 @@ class TestModel2(AnalyticallyInvertableModel):
         F = np.pi * a*a * -Es * eps0 * (1 + summation)
         return F
 
-    def inverted_value_units(self):
+    @classmethod
+    def inverted_value_units(cls):
         return "Newtons"  # Newtons
 
 
@@ -392,7 +416,7 @@ class TestModel3(TestModel2):
         :param s:
         :return:
         """
-        vs, tg, Es, eps0, a = self.get_predefined_constants()  #TestModel3.get_predefined_constants()
+        vs, tg, Es, eps0, a = self.get_parameters()  #TestModel3.get_predefined_constants()
         alpha, = self.get_calculable_constants()
 
         eps = -eps0/s
@@ -404,12 +428,12 @@ class TestModel3(TestModel2):
         Overrides super function
         :return:
         """
-        vs, tg, Es, eps0, a = self.get_predefined_constants() #type(self).get_predefined_constants()
+        vs, tg, Es, eps0, a = self.get_parameters() #type(self).get_predefined_constants()
 
-        if bessel_len > type(self).saved_bessel_len:
+        if bessel_len > self.saved_bessel_len:
             self.setup_constants(bessel_len=bessel_len)
-        A_vals = type(self).A_vals
-        alpha2_vals = type(self).alpha2_vals
+        A_vals = self.A_vals
+        alpha2_vals = self.alpha2_vals
 
         summation_a = 0
         for n in range(bessel_len):
@@ -417,28 +441,43 @@ class TestModel3(TestModel2):
 
         return summation_a
 
-    def inverted_value_units(self):
+    @classmethod
+    def inverted_value_units(cls):
         return "unitless"  # displacement/a is m/m = unitless
 
 
 class TestModel4(LaplaceModel):   # Dr. Spector sent this to me May 29, 2021
-    #@staticmethod
-    #def characteristic_eqn(*args, **kwargs): return TestModel2.characteristic_eqn(*args, **kwargs)
-
+    """
     v = 0
     strain_rate = 0.0003  #1e-3  # s^-1
     t0_tg = 0.1
     tg = 1000  #7e3  # sec
+    """
 
-    def get_predefined_constants(self):
-        return self.v, self.strain_rate, self.t0_tg, self.tg
+    def __init__(self):
+        self.v = 0;
+        self.strain_rate = 0.0003  # 1e-3  # s^-1
+        self.t0_tg = 0.1
+        self.tg = 1000  # 7e3  # sec
+
+    @classmethod
+    def get_predefined_constants(cls):
+        # cls.v, cls.strain_rate, cls.t0_tg, cls.tg
+        return ()   # zero-length tuple
 
     @staticmethod
     def get_predefined_constant_names():
+        return ()   # zero-length tuple
+
+    def get_parameters(self):
+        return self.v, self.strain_rate, self.t0_tg, self.tg
+
+    @classmethod
+    def get_parameter_names(cls):
         return "v", "strain_rate", "t0/tg", "tg"
 
     def get_calculable_constants(self):
-        v, strain_rate, t0_tg, tg = self.get_predefined_constants()
+        v, strain_rate, t0_tg, tg = self.get_parameters()
         t0 = t0_tg * tg
         eps0 = strain_rate * t0
         C0 = (1-2*v)/(1-v)

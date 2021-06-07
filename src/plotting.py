@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 import time as timer
 
-from src.euler_inversion import euler_inversion
+#from src.euler_inversion import euler_inversion
+from euler_inversion import euler_inversion
 
 
 def overlap(a, b, ):

@@ -501,7 +501,7 @@ class TestModel4(LaplaceModel):   # Dr. Spector sent this to me May 29, 2021
         # TODO: Confirm the TestModel4 epszz expression from Dr. Spector as this seems to be different from the one
         #  for the viscoporoelastic model
 
-        epszz = eps0*(1 - exp(-s*t0))/(s*s);  ##  Laplace transform of the axial strain
+        epszz = eps0*(1 - exp(-s*t0/tg))/(s*s);  ##  Laplace transform of the axial strain
         f_prime = epszz * (3*I0(sqrt(s))-4*C0*I1(sqrt(s))/sqrt(s)) / (I0(sqrt(s))-C0*I1(sqrt(s))/sqrt(s))
         return f_prime
 

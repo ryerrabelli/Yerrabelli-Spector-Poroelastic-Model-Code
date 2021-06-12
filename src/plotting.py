@@ -40,6 +40,7 @@ def plot_laplace_analysis(func,
                           inv_func_anal=None,
                           Marg=None,
                           assume_times_unique=True,  # assume_times_unique may speed up the function for plotting the numerical to analytic solution error
+                          model_name=None,
                           ):
     t1=timer.time();
     inverted_vals_numerical = euler_inversion(func, input_times/tg, Marg=Marg)
@@ -76,10 +77,18 @@ def plot_laplace_analysis(func,
     #subplot_row_ct = 1
     subplot_col_ct = 2
     fig, axs = plt.subplots(subplot_row_ct, subplot_col_ct)
-    fig.tight_layout()
-    fig.set_figwidth(9)
-    fig.set_figheight(4*subplot_row_ct-1)
+
+    if model_name is not None:
+        plt.suptitle(model_name)
+        fig.tight_layout(rect=[0.0, 0.0, 1.0, 0.85])   # [left, bottom, right, top] in normalized (0, 1) figure coordinates
+        fig.set_figheight( (4 * subplot_row_ct - 1)/0.85 )
+
+    else:
+        fig.tight_layout()  # defaults to using the entire figure
+        fig.set_figheight(  4*subplot_row_ct-1 )
     fig.set_dpi(150)
+    fig.set_figwidth(9)
+
 
     if subplot_row_ct == 1:
         ax00 = axs[0]

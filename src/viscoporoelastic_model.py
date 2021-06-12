@@ -92,6 +92,12 @@ class LaplaceModel(abc.ABC):
             ),
         ))
 
+    @classmethod
+    def get_model_name(cls):
+        # self.__class__.__name__
+        # type(self).__name__
+        return cls.__name__
+
 
 class AnalyticallyInvertableModel(LaplaceModel, abc.ABC):
     def inverted_value(self, t): return NotImplemented
@@ -505,3 +511,60 @@ class TestModel4(LaplaceModel):   # Dr. Spector sent this to me May 29, 2021
         f_prime = epszz * (3*I0(sqrt(s))-4*C0*I1(sqrt(s))/sqrt(s)) / (I0(sqrt(s))-C0*I1(sqrt(s))/sqrt(s))
         return f_prime
 
+
+class TestModel5(LaplaceModel):   # Dr. Spector sent this to me May 29, 2021
+    """
+    v = 0
+    strain_rate = 0.0003  #1e-3  # s^-1
+    t0_tg = 0.1
+    tg = 1000  #7e3  # sec
+    """
+
+    def __init__(self):
+        self.v = 0;
+        self.strain_rate = 1e-4  # s^-1
+        self.t0_tg = 100/7e3
+        self.tg = 7e3  # sec
+
+    @classmethod
+    def get_predefined_constants(cls):
+        # cls.v, cls.strain_rate, cls.t0_tg, cls.tg
+        return ()   # zero-length tuple
+
+    @staticmethod
+    def get_predefined_constant_names():
+        return ()   # zero-length tuple
+
+    def get_parameters(self):
+        return self.v, self.strain_rate, self.t0_tg, self.tg
+
+    @classmethod
+    def get_parameter_names(cls):
+        return "v", "strain_rate", "t0/tg", "tg"
+
+    def get_calculable_constants(self):
+        v, strain_rate, t0_tg, tg = self.get_parameters()
+        t0 = t0_tg * tg
+        eps0 = strain_rate * t0
+        C0 = (1-2*v)/(1-v)
+        return t0, eps0, C0
+
+    @staticmethod
+    def get_calculable_constant_names():
+        return "t0", "eps0", "C0"
+
+    def laplace_value(self, s):
+        """
+        Overrides super function
+        :param s:
+        :return:
+        """
+        v, strain_rate, t0_tg, tg = self.get_parameters()
+        t0, eps0, C0 = self.get_calculable_constants()
+
+        # TODO: Confirm the TestModel4 epszz expression from Dr. Spector as this seems to be different from the one
+        #  for the viscoporoelastic model
+
+        epszz = strain_rate*tg*(1 - exp(-s*t0/tg))/(s*s);  ##  Laplace transform of the axial strain
+        f_prime = epszz * (3*I0(sqrt(s))-4*C0*I1(sqrt(s))/sqrt(s)) / (I0(sqrt(s))-C0*I1(sqrt(s))/sqrt(s))
+        return f_prime

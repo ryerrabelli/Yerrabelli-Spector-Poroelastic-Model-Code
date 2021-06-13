@@ -512,7 +512,7 @@ class TestModel4(LaplaceModel):   # Dr. Spector sent this to me May 29, 2021
         return f_prime
 
 
-class TestModel5(LaplaceModel):   # Dr. Spector sent this to me May 29, 2021
+class ArmstrongIsotropicModel(LaplaceModel):   # Dr. Spector sent this to me May 29, 2021, then revised it on Jun 11, 2021
     """
     v = 0
     strain_rate = 0.0003  #1e-3  # s^-1

@@ -732,3 +732,10 @@ class ViscoporoelasticModel1(LaplaceModel):
 
 
         return sigbar
+
+
+if __name__ == '__main__':
+    s = 0.001
+    vpe = ViscoporoelasticModel1()
+    output = s * vpe.laplace_value(s)
+    print(output)

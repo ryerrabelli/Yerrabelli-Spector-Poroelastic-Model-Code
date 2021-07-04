@@ -31,10 +31,11 @@ def overlap(a, b, ):
 def plot_laplace_analysis(func,
                           func_name,
                           x_names,
-                          s_vals,
-                          input_times,
-                          plot_times,
-                          tg,
+                          input_s,       # input_s should include all values of plot_s
+                          input_times,   # input_times should include all values of plot_times
+                          plot_s=None,
+                          plot_times=None,
+                          time_const=1,  # default is times area already nondimensional, otherwise, divide by this to become nondimensional
                           input_times_anal=None,
                           plot_times_anal=None,
                           inv_func_anal=None,
@@ -42,13 +43,22 @@ def plot_laplace_analysis(func,
                           assume_times_unique=True,  # assume_times_unique may speed up the function for plotting the numerical to analytic solution error
                           model_name=None,
                           ):
-    t1=timer.time();
-    inverted_vals_numerical = euler_inversion(func, input_times/tg, Marg=Marg)
-    t2=timer.time()-t1
-    print("Time taken in sec:", t2)
+
+    if plot_times is None:
+        plot_times = input_times
+    if plot_s is None:
+        plot_s = input_s
+
+    plot_times_indices_in_input = np.arange(len(plot_times))
+    plot_s_indices_in_input = np.arange(len(plot_s))
 
     # Non-positive s values give an error "invalid value encountered in sqrt"
-    laplace_vals = func(s_vals)
+    laplace_vals = func(input_s)
+
+    t1=timer.time();
+    inverted_vals_numerical = euler_inversion(func, input_times / time_const, Marg=Marg)
+    t2=timer.time()-t1
+    print(f"It took {t2:0.4f} sec to numerically invert laplace the func for {len(input_times)} input times.")
 
     #inverted_vals_analytical = None if inv_func_anal is None else inv_func_anal(input_times_anal)
     #inversion_error = (inverted_vals_numerical-inverted_vals_analytical)/inverted_vals_numerical
@@ -81,14 +91,13 @@ def plot_laplace_analysis(func,
     if model_name is not None:
         plt.suptitle(model_name)
         fig.tight_layout(rect=[0.0, 0.0, 1.0, 0.85])   # [left, bottom, right, top] in normalized (0, 1) figure coordinates
-        fig.set_figheight( (4 * subplot_row_ct - 1)/0.85 )
+        fig.set_figheight( (4*subplot_row_ct-1)/0.85 )
 
     else:
         fig.tight_layout()  # defaults to using the entire figure
         fig.set_figheight(  4*subplot_row_ct-1 )
     fig.set_dpi(150)
     fig.set_figwidth(9)
-
 
     if subplot_row_ct == 1:
         ax00 = axs[0]
@@ -99,12 +108,12 @@ def plot_laplace_analysis(func,
         ax10 = axs[1, 0]
         ax11 = axs[1, 1]
 
-    ax00.plot(s_vals, laplace_vals, ".-b")
-    #ax00.plot(s_vals, laplace_vals*s_vals, ".-b")
+    ax00.plot(plot_s, laplace_vals[plot_s_indices_in_input], ".-b")
+    #ax00.plot(input_s, laplace_vals*input_s, ".-b")
     ax00.set_xlabel(x_names["s"])
     # theoretically, there should be no lower limit on s, but non-positive values throw an error in the function
     #ax00.set_xlim([0, None])
-    ax00.set_xlim([0, max(s_vals)])
+    ax00.set_xlim([0, max(plot_s)])
     ax00.set_ylabel(func_name["s"])
     ax00.title.set_text("Laplace")
     ax00.grid(which="major")
@@ -112,9 +121,10 @@ def plot_laplace_analysis(func,
     ax00.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
     ax00.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
 
-    ax01.plot(plot_times, inverted_vals_numerical, ".-r")
+    #np.abs(input_times / time_const - plot_times / time_const).argmin()
+    ax01.plot(plot_times/time_const, inverted_vals_numerical[plot_times_indices_in_input], ".-r")
     ax01.set_xlabel(x_names["t"])
-    ax01.set_xlim([0, max(plot_times)])
+    ax01.set_xlim([0, max(plot_times / time_const)])
     ax01.set_ylabel(func_name["t"])
     ax01.title.set_text("Numerical Inverse Laplace")
     ax01.grid(which="major")

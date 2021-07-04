@@ -100,8 +100,8 @@ Ehat    =  -2*(Srr*Szz-Srz*Srz)/(alpha);
 
 #  8
 #f      =  r0^2*s / (Ehat*k*f2(c,tau1,tau2))
-# Simplified using tg=r0^2/(Ehat*k)
-# !!Confirm should be a function of c, tau also maybe Sij or tg
+# Simplified using time_const=r0^2/(Ehat*k)
+# !!Confirm should be a function of c, tau also maybe Sij or time_const
 f       = tg * s/f2;
 
 

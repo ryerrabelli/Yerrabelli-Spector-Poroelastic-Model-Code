@@ -26,7 +26,7 @@ tau1 = 1;
 tau2 = 1;
 #tau = [tau1, tau2];
 #tau = [1 1];
-tg=40.62; #in units of s   # for porosity_sp == 0.5
+time_const=40.62; #in units of s   # for porosity_sp == 0.5
 Vrtheta = 1; # Not actually v, but greek nu (represents Poisson's ratio)
 Err = 1;
 """
@@ -138,7 +138,7 @@ class ViscoporoelasticModel0(LaplaceModel):
 
     @staticmethod
     def get_fitted_parameter_names():
-        return "c", "tau1", "tau2", "tg", "Vrtheta", "Err"
+        return "c", "tau1", "tau2", "time_const", "Vrtheta", "Err"
 
     def get_parameters(self): return self.get_fitted_parameters()
 
@@ -187,13 +187,13 @@ class ViscoporoelasticModel0(LaplaceModel):
                       ):
 
         """
-        self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, tg=tg, Vrtheta=Vrtheta, Err=Err)
+        self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, time_const=time_const, Vrtheta=Vrtheta, Err=Err)
         c = self.c;
         tau1 = self.tau1;
         tau2 = self.tau2;
         # tau = [tau1, tau2];
         # tau = [1 1];
-        tg = self.tg;  # in units of s   # for porosity_sp == 0.5
+        time_const = self.time_const;  # in units of s   # for porosity_sp == 0.5
         Vrtheta = self.Vrtheta;  # Not actually v, but greek nu (represents Poisson's ratio)
         Err = self.Err;
         """
@@ -244,8 +244,8 @@ class ViscoporoelasticModel0(LaplaceModel):
 
         #  8
         #f      =  r0^2*s / (Ehat*k*f2(c,tau1,tau2))
-        # Simplified using tg=r0^2/(Ehat*k)
-        # !!Confirm should be a function of c, tau also maybe Sij or tg
+        # Simplified using time_const=r0^2/(Ehat*k)
+        # !!Confirm should be a function of c, tau also maybe Sij or time_const
         f       = tg * s/f2;
 
 
@@ -714,22 +714,49 @@ class ViscoporoelasticModel1(LaplaceModel):
 
 
         #  1 (<-8)
-        sigbar  =  \
-            2*epszz*(\
-                C13\
-                    *(\
-                        g \
-                            * I1(sqrt(f))/sqrt(f) \
-                            /(Ehat*I0(sqrt(f))-2*I1(sqrt(f))/sqrt(f)) \
-                        -1/2 \
-                    ) \
-                + C33/2 \
-                + f1\
-                    *f2*\
-                    (I0(sqrt(f))-2*I1(sqrt(f))/sqrt(f))\
-                    /(2 * ( Ehat*I0(sqrt(f)) - I1(sqrt(f))/sqrt(f) ) ) \
-            );
+        I1rtf = I1(sqrt(f))
+        # np.isinf returns true if element is inf or -inf (does this elementwise for array)
+        is_inf = np.any(np.isinf(I1rtf), axis=-1)
+        # I1rtf overall is of type numpy.ndarray, but each value is possibly complex128, which is different than the default complex
+        # a complex128 inf throws a warning when dividing by another value, whereas a regular complex doesn't
+        is_complex128 = [type(I1rtf_val)==np.complex128 for I1rtf_val in I1rtf[is_inf]]
+        if np.any(is_inf):
+            print(f"Warning the function could not be inverted at some values of t as the I1(sqrt(f)) component "
+                  f"led to +/- infinity. The indices of these time points are {np.nonzero(is_inf)}.")
+            #I1rtf[np.isinf(I1rtf)] = np.nan
 
+        with np.errstate(invalid="ignore"):
+            I1rtf_f = I1rtf / sqrt(f)
+            """
+            sigbar = \
+                2 * epszz * ( \
+                            C13 \
+                            * ( \
+                                        g * I1rtf_f \
+                                        / (Ehat * I0(sqrt(f)) - 2 * I1rtf_f) \
+                                        - 1 / 2 \
+                                ) \
+                            + C33 / 2 \
+                            + f1 * f2 * \
+                            (I0(sqrt(f)) - 2 * I1rtf_f) \
+                            / (2 * Ehat * I0(sqrt(f) - 2 * I1rtf_f)) \
+                    );
+            """
+            sigbar = \
+                2 * epszz * ( \
+                            C13 \
+                            * ( \
+                                        g \
+                                        * I1rtf_f \
+                                        / (Ehat * I0(sqrt(f)) - 2 * I1rtf_f) \
+                                        - 1 / 2 \
+                                ) \
+                            + C33 / 2 \
+                            + f1 \
+                            * f2 * \
+                            (I0(sqrt(f)) - 2 * I1rtf_f) \
+                            / (2 * (Ehat * I0(sqrt(f)) - I1rtf_f)) \
+                    );
 
         return sigbar
 

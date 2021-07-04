@@ -1,2 +1,10 @@
-
+# Ignores temporary files when the file is open by an editor (i.e. MATLAB, Word, Excel, etc)
 *.m~
+*~$*.docx
+*~$*.xlsx
+*~$*.pptx
+
+
+# Ignore compiled python files
+*.cpython-??.pyc
+src/__pycache__/*

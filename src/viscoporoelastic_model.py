@@ -675,7 +675,7 @@ class ViscoporoelasticModel1(LaplaceModel):
         # Below lines modified from March to June 2021 versions
         t0 = t0_tg * tg
         #eps0 = strain_rate * t0
-        epszz = strain_rate * tg * (1 - exp(-s*t0/tg)/(s*s));  ##  Laplace transform of the axial strain
+        epszz = strain_rate * tg * (1 - exp(-s*t0/tg))/(s*s);  ##  Laplace transform of the axial strain
 
 
 

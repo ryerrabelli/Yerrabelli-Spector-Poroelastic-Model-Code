@@ -1,7 +1,7 @@
 ##%%
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mtick
+import matplotlib.ticker
 import time as timer
 
 #from src.euler_inversion import euler_inversion
@@ -102,26 +102,36 @@ def plot_laplace_analysis(func,
     ax00.plot(s_vals, laplace_vals, ".-b")
     #ax00.plot(s_vals, laplace_vals*s_vals, ".-b")
     ax00.set_xlabel(x_names["s"])
-    # theoretically, there should be no limit on s, but non-positive values throw an error in the function
-    ax00.set_xlim([0, None])
+    # theoretically, there should be no lower limit on s, but non-positive values throw an error in the function
+    #ax00.set_xlim([0, None])
+    ax00.set_xlim([0, max(s_vals)])
     ax00.set_ylabel(func_name["s"])
-    ax00.grid()
     ax00.title.set_text("Laplace")
+    ax00.grid(which="major")
+    ax00.grid(which="minor", alpha=0.75, linestyle=":")
+    ax00.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+    ax00.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
 
     ax01.plot(plot_times, inverted_vals_numerical, ".-r")
     ax01.set_xlabel(x_names["t"])
-    ax01.set_xlim([0, None])
+    ax01.set_xlim([0, max(plot_times)])
     ax01.set_ylabel(func_name["t"])
-    ax01.grid()
     ax01.title.set_text("Numerical Inverse Laplace")
+    ax01.grid(which="major")
+    ax01.grid(which="minor", alpha=0.75, linestyle=":")
+    ax01.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+    ax01.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
 
     if inverted_vals_analytical is not None:
         ax11.plot(plot_times_anal, inverted_vals_analytical, ".-y")
         ax11.set_xlabel(x_names.get("t_anal") or x_names["t"])
-        ax11.set_xlim([0, None])
+        ax11.set_xlim([0, max(plot_times_anal)])
         ax11.set_ylabel(func_name.get("t_anal") or func_name["t"])
-        ax11.grid()
         ax11.title.set_text("Analytical Inverse Laplace")
+        ax11.grid(which="major")
+        ax11.grid(which="minor", alpha=0.75, linestyle=":")
+        ax11.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+        ax11.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
 
         if False and  is_in_anal_times_too.any():
             ax10.plot(plot_times_anal[is_in_num_times_too], inversion_error * 100.0, ".-g")
@@ -149,10 +159,13 @@ def plot_laplace_analysis(func,
         ax10.set_ylabel(r"% $error=\frac{f_{Numer}(t)-f_{Anal}(t)}{f_{Anal}(t)}$")
         # Note- if a y value is 0.5, then percentformatter makes it 0.5% not 50%.
         # Thus have to multiply by 100 before getting the y values.
-        ax10.yaxis.set_major_formatter(mtick.PercentFormatter())
+        ax10.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter())
 
-        ax10.grid()
         ax10.title.set_text("Percent Error")
+        ax10.grid(which="major")
+        ax10.grid(which="minor", alpha=0.75, linestyle=":")
+        ax10.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+        ax10.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
 
     return fig, laplace_vals, inverted_vals_numerical, inverted_vals_analytical
 

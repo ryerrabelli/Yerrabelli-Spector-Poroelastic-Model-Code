@@ -760,6 +760,106 @@ class ViscoporoelasticModel1(LaplaceModel):
 
         return sigbar
 
+class ViscoporoelasticModel2(LaplaceModel):
+    ## PARAMETERS
+    ## Predefined constants
+    Vrz = 0.5;  # Not actually v, but greek nu (represents Poisson's ratio)
+    t0_tg = 0.1;
+
+    def __init__(self):
+        self.c = 2;
+        self.tau1 = 0.001;
+        self.tau2 = 10;
+        # tau = [tau1, tau2];
+        # tau = [1 1];
+        self.tg = 40.62;  # in units of s   # for porosity_sp == 0.5
+        self.v = 0.3
+        self.t0_tg = 10
+
+    @classmethod
+    def get_predefined_constants(cls):
+        return tuple()
+
+    @staticmethod
+    def get_predefined_constant_names():
+        return tuple()
+
+    # This is not a static method as fitted parameters depend on the instance (note- the names are still same though)
+    def get_fitted_parameters(self):
+        return self.c, self.tau1, self.tau2, self.tg, self.v, self.t0_tg;
+
+    @staticmethod
+    def get_fitted_parameter_names():
+        return "c", "tau1", "tau2", "tg", "v", "t0/tg"
+
+    def get_parameters(self): return self.get_fitted_parameters()
+
+    @classmethod
+    def get_parameter_names(cls): return cls.get_fitted_parameter_names()
+
+    @classmethod
+    def get_var_categories(cls):
+        return ("Constant",)    * len(cls.get_predefined_constant_names()) + \
+               ("FittedParam",) * len(cls.get_fitted_parameter_names())
+
+    def set_fitted_parameters(self,
+                          ## Fitted parameters (to be determined by experimental fitting to
+                          # the unknown material)
+                          c=None,
+                          tau1=None,
+                          tau2=None,  # tau = [tau1, tau2];
+                          tg=None,  # in units of s   # for porosity_sp == 0.5
+                          v=None,  # Not actually v, but greek nu (represents Poisson's ratio)
+                          t0_tg=None,
+                          ):
+        if c is not None:
+            self.c = c
+        if tau1 is not None:
+            self.tau1 = tau1
+        if tau2 is not None:
+            self.tau2 = tau2
+        if tg is not None:
+            self.tg = tg
+        if v is not None:
+            self.v = v
+        if t0_tg is not None:
+            self.t0_tg = t0_tg
+        return self.get_fitted_parameters()
+
+    def laplace_value(self,
+                      s,
+                      ## Fitted parameters (to be determined by experimental fitting to
+                      # the unknown material)
+                      c=None,
+                      tau1=None,
+                      tau2=None,  # tau = [tau1, tau2];
+                      tg=None,  # in units of s   # for porosity_sp == 0.5
+                      v=None,  # Not actually v, but greek nu (represents Poisson's ratio)
+                      t0_tg=None,
+                      ):
+
+        """
+        self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, tg=tg, Vrtheta=Vrtheta, Err=Err)
+        c = self.c;
+        tau1 = self.tau1;
+        tau2 = self.tau2;
+        # tau = [tau1, tau2];
+        # tau = [1 1];
+        tg = self.tg;  # in units of s   # for porosity_sp == 0.5
+        Vrtheta = self.Vrtheta;  # Not actually v, but greek nu (represents Poisson's ratio)
+        Err = self.Err;
+        """
+        c, tau1, tau2, tg, v, t0_tg = self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, tg=tg, v=v, t0_tg=t0_tg)
+
+        _ = self.get_predefined_constants()
+
+        gamma = 2*(1-2*v)/(3*(1-v))
+        f = s/(1+gamma*c*ln((1+s*tau1)/(1+s*tau2)))
+        #T_bar = tg/t0 * coth(sqrt(f))/(s*sqrt(f))*(1-exp(-t0_tg*s))
+        T_bar = (1 - exp(-t0_tg * s)) / (t0_tg * s * sqrt(f) * np.tanh(sqrt(f)))
+
+        return T_bar
+
 
 if __name__ == '__main__':
     s = 0.001

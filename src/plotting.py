@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker
 import time as timer
+import collections
 
 #from src.euler_inversion import euler_inversion
 from euler_inversion import euler_inversion
@@ -28,6 +29,7 @@ def overlap(a, b, ):
     ind_b = np.array([np.argwhere(b == a[x]) for x in ind_a]).flatten()
     return ind_a,ind_b
 
+
 def plot_laplace_analysis(func,
                           func_name,
                           x_names,
@@ -38,7 +40,7 @@ def plot_laplace_analysis(func,
                           time_const=1,  # default is times area already nondimensional, otherwise, divide by this to become nondimensional
                           input_times_anal=None,
                           plot_times_anal=None,
-                          inv_func_anal=None,
+                          inv_funcs_anal=None,
                           Marg=None,
                           assume_times_unique=True,  # assume_times_unique may speed up the function for plotting the numerical to analytic solution error
                           model_name=None,
@@ -49,27 +51,33 @@ def plot_laplace_analysis(func,
     if plot_s is None:
         plot_s = input_s
 
+    funcs = func
+    return_singles = False
+    if not isinstance(funcs, collections.abc.Iterable):
+        funcs = [funcs]
+        return_singles = True
+    if not isinstance(inv_funcs_anal, collections.abc.Iterable):
+        inv_funcs_anal = [inv_funcs_anal]
+
     plot_times_indices_in_input = np.arange(len(plot_times))
     plot_s_indices_in_input = np.arange(len(plot_s))
 
     # Non-positive s values give an error "invalid value encountered in sqrt"
-    laplace_vals = func(input_s)
+    laplace_vals_all = [func(input_s) for func in funcs]
 
     t1=timer.time();
-    inverted_vals_numerical = euler_inversion(func, input_times / time_const, Marg=Marg)
+    inverted_vals_numerical_all = [euler_inversion(func, input_times / time_const, Marg=Marg) for func in funcs ]
     t2=timer.time()-t1
     print(f"It took {t2:0.4f} sec to numerically invert laplace the func for {len(input_times)} input times.")
 
     #inverted_vals_analytical = None if inv_func_anal is None else inv_func_anal(input_times_anal)
     #inversion_error = (inverted_vals_numerical-inverted_vals_analytical)/inverted_vals_numerical
-    if inv_func_anal is None:
-        inverted_vals_analytical = None
-    else:
+    inverted_vals_analytical_all = [ (None if inv_func_anal is None else inv_func_anal(input_times_anal)) for inv_func_anal in inv_funcs_anal]
+    if any(inverted_vals_analytical is not None for inverted_vals_analytical in inverted_vals_analytical_all):
         if plot_times_anal is None:
             plot_times_anal = plot_times
         if input_times_anal is None:
             input_times_anal = input_times
-        inverted_vals_analytical = inv_func_anal(input_times_anal)
         # np.isin(.) return array of booleans unlike np.intersect1d(.)
         # np.is1d(.) is an old version of np.isin(.)
         # In either function, assume_unique can speed up the analysis.
@@ -79,11 +87,11 @@ def plot_laplace_analysis(func,
         if is_in_anal_times_too.any():  # If no elements in common, no point in getting the reverse indices
             is_in_num_times_too = np.isin(input_times, input_times_anal, assume_unique=assume_times_unique)
             #inversion_error = (inverted_vals_numerical-inverted_vals_analytical)/inverted_vals_analytical
-            inversion_error = (inverted_vals_numerical[is_in_anal_times_too] - inverted_vals_analytical[is_in_num_times_too]) \
-                              / inverted_vals_analytical[is_in_num_times_too]
+            inversion_error_all = [(inverted_vals_numerical[is_in_anal_times_too] - inverted_vals_analytical[is_in_num_times_too]) \
+                                   / inverted_vals_analytical[is_in_num_times_too] for inverted_vals_numerical,inverted_vals_analytical in zip(inverted_vals_numerical_all,inverted_vals_analytical_all)  ]
 
     # Plotting
-    subplot_row_ct = 1 if inv_func_anal is None else 2
+    subplot_row_ct = 1 if all(inv_func_anal is None for inv_func_anal in inv_funcs_anal) else 2
     #subplot_row_ct = 1
     subplot_col_ct = 2
     fig, axs = plt.subplots(subplot_row_ct, subplot_col_ct)
@@ -108,8 +116,9 @@ def plot_laplace_analysis(func,
         ax10 = axs[1, 0]
         ax11 = axs[1, 1]
 
-    ax00.plot(plot_s, laplace_vals[plot_s_indices_in_input], ".-b")
-    #ax00.plot(input_s, laplace_vals*input_s, ".-b")
+    for laplace_vals in laplace_vals_all:
+        ax00.plot(plot_s, laplace_vals[plot_s_indices_in_input], ".-b")
+        #ax00.plot(input_s, laplace_vals*input_s, ".-b")
     ax00.set_xlabel(x_names["s"])
     # theoretically, there should be no lower limit on s, but non-positive values throw an error in the function
     #ax00.set_xlim([0, None])
@@ -122,7 +131,8 @@ def plot_laplace_analysis(func,
     ax00.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
 
     #np.abs(input_times / time_const - plot_times / time_const).argmin()
-    ax01.plot(plot_times/time_const, inverted_vals_numerical[plot_times_indices_in_input], ".-r")
+    for inverted_vals_numerical in inverted_vals_numerical_all:
+        ax01.plot(plot_times/time_const, inverted_vals_numerical[plot_times_indices_in_input], ".-r")
     ax01.set_xlabel(x_names["t"])
     ax01.set_xlim([0, max(plot_times / time_const)])
     ax01.set_ylabel(func_name["t"])
@@ -132,8 +142,9 @@ def plot_laplace_analysis(func,
     ax01.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
     ax01.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
 
-    if inverted_vals_analytical is not None:
-        ax11.plot(plot_times_anal, inverted_vals_analytical, ".-y")
+    if any(inverted_vals_analytical is not None for inverted_vals_analytical in inverted_vals_analytical_all):
+        for inverted_vals_analytical in inverted_vals_analytical_all:
+            ax11.plot(plot_times_anal, inverted_vals_analytical, ".-y")
         ax11.set_xlabel(x_names.get("t_anal") or x_names["t"])
         ax11.set_xlim([0, max(plot_times_anal)])
         ax11.set_ylabel(func_name.get("t_anal") or func_name["t"])
@@ -143,11 +154,11 @@ def plot_laplace_analysis(func,
         ax11.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
         ax11.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
 
-        if False and  is_in_anal_times_too.any():
-            ax10.plot(plot_times_anal[is_in_num_times_too], inversion_error * 100.0, ".-g")
         if is_in_anal_times_too.any():
-            ax10.plot(plot_times_anal[is_in_num_times_too], inversion_error, ".-g")
-            if min(abs(inversion_error * 100.0)) < 0.1:
+            for plot_times_anal in plot_times_anal_all:
+                #ax10.plot(plot_times_anal[is_in_num_times_too], inversion_error * 100.0, ".-g")
+                ax10.plot(plot_times_anal[is_in_num_times_too], inversion_error, ".-g")
+            if all(min(abs(inversion_error * 100.0)) < 0.1 for inversion_error in inversion_error_all):
                 ax10.set_ylim([-100, 100])
             else:
                 # Center y axis around 0
@@ -177,5 +188,10 @@ def plot_laplace_analysis(func,
         ax10.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
         ax10.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
 
-    return fig, laplace_vals, inverted_vals_numerical, inverted_vals_analytical
+    if return_singles:
+        assert all(len(data)==1 for data in [laplace_vals_all,inverted_vals_numerical_all,inverted_vals_analytical_all])
+        laplace_vals_all = laplace_vals_all[0]
+        inverted_vals_numerical_all = inverted_vals_numerical_all[0]
+        inverted_vals_analytical_all = inverted_vals_analytical_all[0]
+    return fig, laplace_vals_all, inverted_vals_numerical_all, inverted_vals_analytical_all
 

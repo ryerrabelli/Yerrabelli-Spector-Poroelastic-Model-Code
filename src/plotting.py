@@ -33,17 +33,19 @@ def overlap(a, b, ):
 def plot_laplace_analysis(func,
                           func_name,
                           x_names,
-                          input_s,       # input_s should include all values of plot_s
-                          input_times,   # input_times should include all values of plot_times
+                          input_s,  # input_s should include all values of plot_s
+                          input_times,  # input_times should include all values of plot_times
                           plot_s=None,
                           plot_times=None,
                           time_const=1,  # default is times area already nondimensional, otherwise, divide by this to become nondimensional
                           input_times_anal=None,
                           plot_times_anal=None,
-                          inv_funcs_anal=None,
+                          inv_funcs_anal=None,  # Has to be None or a list of same length as func (if so, each element can still be None)
                           Marg=None,
                           assume_times_unique=True,  # assume_times_unique may speed up the function for plotting the numerical to analytic solution error
                           model_name=None,
+                          func_labels=None,
+                          legends_to_show_ct=1,
                           ):
 
     if plot_times is None:
@@ -57,7 +59,12 @@ def plot_laplace_analysis(func,
         funcs = [funcs]
         return_singles = True
     if not isinstance(inv_funcs_anal, collections.abc.Iterable):
-        inv_funcs_anal = [inv_funcs_anal]
+        inv_funcs_anal = [inv_funcs_anal] * len(funcs)
+    if func_labels is None:
+        func_labels = [None] * len(funcs)
+
+    funcs_ct = len(funcs)
+    legends_shown_ct = 0
 
     plot_times_indices_in_input = np.arange(len(plot_times))
     plot_s_indices_in_input = np.arange(len(plot_s))
@@ -116,9 +123,12 @@ def plot_laplace_analysis(func,
         ax10 = axs[1, 0]
         ax11 = axs[1, 1]
 
-    for laplace_vals in laplace_vals_all:
-        ax00.plot(plot_s, laplace_vals[plot_s_indices_in_input], ".-b")
+    for laplace_vals, func_label in zip(laplace_vals_all, func_labels):
+        ax00.plot(plot_s, laplace_vals[plot_s_indices_in_input], ".-b" if funcs_ct == 1 else ".-", label=func_label)
         #ax00.plot(input_s, laplace_vals*input_s, ".-b")
+    if legends_shown_ct < legends_to_show_ct and any(func_label is not None for func_label in func_labels):
+        ax00.legend()
+        legends_shown_ct += 1
     ax00.set_xlabel(x_names["s"])
     # theoretically, there should be no lower limit on s, but non-positive values throw an error in the function
     #ax00.set_xlim([0, None])
@@ -131,8 +141,11 @@ def plot_laplace_analysis(func,
     ax00.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
 
     #np.abs(input_times / time_const - plot_times / time_const).argmin()
-    for inverted_vals_numerical in inverted_vals_numerical_all:
-        ax01.plot(plot_times/time_const, inverted_vals_numerical[plot_times_indices_in_input], ".-r")
+    for inverted_vals_numerical, func_label in zip(inverted_vals_numerical_all, func_labels):
+        ax01.plot(plot_times/time_const, inverted_vals_numerical[plot_times_indices_in_input], ".-r" if funcs_ct == 1 else ".-", label=func_label)
+    if legends_shown_ct < legends_to_show_ct and any(func_label is not None for func_label in func_labels):
+        ax01.legend()
+        legends_shown_ct += 1
     ax01.set_xlabel(x_names["t"])
     ax01.set_xlim([0, max(plot_times / time_const)])
     ax01.set_ylabel(func_name["t"])
@@ -144,7 +157,7 @@ def plot_laplace_analysis(func,
 
     if any(inverted_vals_analytical is not None for inverted_vals_analytical in inverted_vals_analytical_all):
         for inverted_vals_analytical in inverted_vals_analytical_all:
-            ax11.plot(plot_times_anal, inverted_vals_analytical, ".-y")
+            ax11.plot(plot_times_anal, inverted_vals_analytical, ".-y" if funcs_ct == 1 else ".-")
         ax11.set_xlabel(x_names.get("t_anal") or x_names["t"])
         ax11.set_xlim([0, max(plot_times_anal)])
         ax11.set_ylabel(func_name.get("t_anal") or func_name["t"])
@@ -155,9 +168,9 @@ def plot_laplace_analysis(func,
         ax11.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
 
         if is_in_anal_times_too.any():
-            for plot_times_anal in plot_times_anal_all:
+            for inversion_error in inversion_error_all:
                 #ax10.plot(plot_times_anal[is_in_num_times_too], inversion_error * 100.0, ".-g")
-                ax10.plot(plot_times_anal[is_in_num_times_too], inversion_error, ".-g")
+                ax10.plot(plot_times_anal[is_in_num_times_too], inversion_error, ".-g" if funcs_ct == 1 else ".-")
             if all(min(abs(inversion_error * 100.0)) < 0.1 for inversion_error in inversion_error_all):
                 ax10.set_ylim([-100, 100])
             else:
@@ -188,10 +201,13 @@ def plot_laplace_analysis(func,
         ax10.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
         ax10.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
 
+    assert all(len(data) == funcs_ct for data in [laplace_vals_all,inverted_vals_numerical_all,inverted_vals_analytical_all])
     if return_singles:
-        assert all(len(data)==1 for data in [laplace_vals_all,inverted_vals_numerical_all,inverted_vals_analytical_all])
-        laplace_vals_all = laplace_vals_all[0]
-        inverted_vals_numerical_all = inverted_vals_numerical_all[0]
-        inverted_vals_analytical_all = inverted_vals_analytical_all[0]
+        assert funcs_ct == 1
+        # .pop is like accessing an element (like [0]) but works for non-indexable collections (like sets) too; Note-
+        # pop removes an element from the collection while returning it
+        laplace_vals_all = laplace_vals_all.pop()
+        inverted_vals_numerical_all = inverted_vals_numerical_all.pop()
+        inverted_vals_analytical_all = inverted_vals_analytical_all.pop()
     return fig, laplace_vals_all, inverted_vals_numerical_all, inverted_vals_analytical_all
 

@@ -61,7 +61,7 @@ class LaplaceModel(abc.ABC):
     @classmethod
     def inverted_value_units(cls): return NotImplemented #return "N/A"
 
-    def get_all_names_and_vars(self):
+    def get_all_names_and_vars(self) -> dict:
         tm = self
 
         #dict(zip(type(tm).get_predefined_constant_names(), tm.get_predefined_constants()))
@@ -580,7 +580,8 @@ class ViscoporoelasticModel1(LaplaceModel):
     Vrz = 0.5;  # Not actually v, but greek nu (represents Poisson's ratio)
     Ezz = 10;  # Note- don't mix up Ezz with epszz
 
-    def __init__(self):
+    def __init__(self, c=1, tau1=1, tau2=1, tg=40.62, Vrtheta=1, Err=1):
+        """
         self.c = 1;
         self.tau1 = 1;
         self.tau2 = 1;
@@ -589,6 +590,9 @@ class ViscoporoelasticModel1(LaplaceModel):
         self.tg = 40.62;  # in units of s   # for porosity_sp == 0.5
         self.Vrtheta = 1;  # Not actually v, but greek nu (represents Poisson's ratio)
         self.Err = 1;
+        """
+        # Source: https://stackoverflow.com/questions/12191075/is-there-a-shortcut-for-self-somevariable-somevariable-in-a-python-class-con/12191118
+        vars(self).update((k, v) for k, v in vars().items() if k != "self")
 
     @classmethod
     def get_predefined_constants(cls):
@@ -760,13 +764,11 @@ class ViscoporoelasticModel1(LaplaceModel):
 
         return sigbar
 
-class ViscoporoelasticModel2(LaplaceModel):
-    ## PARAMETERS
-    ## Predefined constants
-    Vrz = 0.5;  # Not actually v, but greek nu (represents Poisson's ratio)
-    t0_tg = 0.1;
 
-    def __init__(self):
+class ViscoporoelasticModel2(LaplaceModel):
+
+    def __init__(self, c=2, tau1=0.001, tau2=10, tg=40.62, v=0.3, t0_tg=10):
+        """
         self.c = 2;
         self.tau1 = 0.001;
         self.tau2 = 10;
@@ -775,6 +777,9 @@ class ViscoporoelasticModel2(LaplaceModel):
         self.tg = 40.62;  # in units of s   # for porosity_sp == 0.5
         self.v = 0.3
         self.t0_tg = 10
+        """
+        # Source: https://stackoverflow.com/questions/12191075/is-there-a-shortcut-for-self-somevariable-somevariable-in-a-python-class-con/12191118
+        vars(self).update((k, v) for k, v in vars().items() if k != "self")
 
     @classmethod
     def get_predefined_constants(cls):

@@ -859,7 +859,7 @@ class ViscoporoelasticModel2(LaplaceModel):
         _ = self.get_predefined_constants()
 
         gamma = 2*(1-2*v)/(3*(1-v))
-        f = s/(1+gamma*c*ln((1+s*tau1)/(1+s*tau2)))
+        f = s/(1+gamma*c*ln((1+s*tau2)/(1+s*tau1)))
         #T_bar = tg/t0 * coth(sqrt(f))/(s*sqrt(f))*(1-exp(-t0_tg*s))
         T_bar = (1 - exp(-t0_tg * s)) / (t0_tg * s * sqrt(f) * np.tanh(sqrt(f)))
 

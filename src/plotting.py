@@ -31,8 +31,7 @@ def overlap(a, b, ):
 
 
 def plot_laplace_analysis(func,
-                          func_name,
-                          x_names,
+                          plot_props,
                           input_s,  # input_s should include all values of plot_s
                           input_times,  # input_times should include all values of plot_times
                           plot_s=None,
@@ -65,6 +64,9 @@ def plot_laplace_analysis(func,
         inv_funcs_anal = [inv_funcs_anal] * len(funcs)
     if func_labels is None:
         func_labels = [None] * len(funcs)
+
+    func_name = {key: val["y"]["name"] for key, val in plot_props.items()}
+    x_names = {key: val["x"]["name"] for key, val in plot_props.items()}
 
     funcs_ct = len(funcs)
     legends_shown_ct = 0
@@ -133,105 +135,170 @@ def plot_laplace_analysis(func,
         ax10 = axs[1, 0]
         ax11 = axs[1, 1]
 
+    ax_curr = ax00
     for laplace_vals, func_label in zip(laplace_vals_all, func_labels):
-        ax00.plot(plot_s, laplace_vals[plot_s_indices_in_input], ".-b" if funcs_ct == 1 else ".-", label=func_label)
-        #ax00.plot(input_s, laplace_vals*input_s, ".-b")
+        ax_curr.plot(plot_s, laplace_vals[plot_s_indices_in_input], ".-b" if funcs_ct == 1 else ".-", label=func_label)
+        #ax_curr.plot(input_s, laplace_vals*input_s, ".-b")
     if legends_shown_ct < legends_to_show_ct and any(func_label is not None for func_label in func_labels):
-        ax00.legend(fontsize=legend_fontsize)   # fontsize argument only used if prop argument is not specified.
+        ax_curr.legend(fontsize=legend_fontsize)   # fontsize argument only used if prop argument is not specified.
         legends_shown_ct += 1
-    ax00.set_xlabel(x_names["s"])
-    # theoretically, there should be no lower limit on s, but non-positive values throw an error in the function
-    #ax00.set_xlim([0, None])
-    ax00.set_xlim([0, max(plot_s)])
-    ax00.set_ylabel(func_name["s"])
-    ax00.title.set_text("Laplace")
-    ax00.grid(which="major")
-    ax00.grid(which="minor", alpha=0.75, linestyle=":")
-    ax00.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
-    ax00.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+    ax_curr.set_xlabel(plot_props.get("s").get("x").get("name"))  # plot_props["t"]["x"]["name"]
+    ax_curr.set_ylabel(plot_props.get("s").get("y").get("name"))
+    ax_curr.set_xscale(plot_props.get("s").get("x").get("scale") or "linear")
+    ax_curr.set_yscale(plot_props.get("s").get("y").get("scale") or "linear")
+    x_data = plot_s
+    for each_axis, each_scale, set_lim, each_data in [
+        (ax_curr.xaxis, ax_curr.get_xscale(), ax_curr.set_xlim, x_data),
+        (ax_curr.yaxis, ax_curr.get_yscale(), ax_curr.set_ylim, None),
+    ]:
+        if each_scale == "linear":
+            each_axis.set_minor_locator(
+                matplotlib.ticker.AutoMinorLocator()
+            )
+            # theoretically, there should be no lower limit on s, but non-positive values throw an error in the function
+            # ax_curr.set_xlim([0, None])
+            ax_curr.set_xlim([min(0, *plot_s), max(plot_s)])
+            #if each_data is not None:
+            #    set_lim([min(0,*each_data), max(*each_data)])
+        elif each_scale == "log":
+            each_axis.set_minor_locator(
+                matplotlib.ticker.LogLocator(base=10, subs=np.arange(2, 10), numticks=10 * each_axis.get_tick_space())
+            )
+    ax_curr.title.set_text("Laplace")
+    ax_curr.grid(which="major")
+    ax_curr.grid(which="minor", alpha=0.75, linestyle=":")
 
+    ax_curr = ax01
     #np.abs(input_times / time_const - plot_times / time_const).argmin()
     for inverted_vals_numerical, func_label in zip(inverted_vals_numerical_all, func_labels):
-        ax01.plot(plot_times/time_const, inverted_vals_numerical[plot_times_indices_in_input], ".-r" if funcs_ct == 1 else ".-", label=func_label)
+        ax_curr.plot(plot_times/time_const, inverted_vals_numerical[plot_times_indices_in_input], ".-r" if funcs_ct == 1 else ".-", label=func_label)
     if legends_shown_ct < legends_to_show_ct and any(func_label is not None for func_label in func_labels):
-        ax01.legend(fontsize="small")  # string values for fontsize are relative, while int are absolute
+        ax_curr.legend(fontsize="small")  # string values for fontsize are relative, while int are absolute
         legends_shown_ct += 1
-    ax01.set_xlabel(x_names["t"])
-    ax01.set_xlim([0, max(plot_times / time_const)])
-    ax01.set_ylabel(func_name["t"])
-    ax01.title.set_text("Numerical Inverse Laplace")
-    ax01.grid(which="major")
-    ax01.grid(which="minor", alpha=0.75, linestyle=":")
-    ax01.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
-    ax01.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+    ax_curr.set_xlabel(plot_props.get("t").get("x").get("name"))  # plot_props["t"]["x"]["name"]
+    ax_curr.set_ylabel(plot_props.get("t").get("y").get("name"))
+    ax_curr.set_xscale(plot_props.get("t").get("x").get("scale") or "linear")
+    ax_curr.set_yscale(plot_props.get("t").get("y").get("scale") or "linear")
+    for each_axis, each_scale in [(ax_curr.xaxis, ax_curr.get_xscale()),
+                                  (ax_curr.yaxis, ax_curr.get_yscale()), ]:
+        if each_scale == "linear":
+            each_axis.set_minor_locator(
+                matplotlib.ticker.AutoMinorLocator()
+            )
+            ax_curr.set_xlim([0, None])
+            #ax_curr.set_xlim([0, max(plot_times / time_const)])
+        elif each_scale == "log":
+            each_axis.set_minor_locator(
+                matplotlib.ticker.LogLocator(base=10, subs=np.arange(2, 10), numticks=10 * each_axis.get_tick_space())
+            )
+    ax_curr.title.set_text("Numerical Inverse Laplace")
+    ax_curr.grid(which="major")
+    ax_curr.grid(which="minor", alpha=0.75, linestyle=":")
 
     if do_plot_laplace_times_s:
+        ax_curr = ax10
         for laplace_vals, func_label in zip(laplace_vals_all, func_labels):
-            ax10.plot(plot_s_s, plot_s_s*laplace_vals[plot_s_s_indices_in_input], ".-b" if funcs_ct == 1 else ".-", label=func_label)
+            ax_curr.plot(plot_s_s, plot_s_s*laplace_vals[plot_s_s_indices_in_input], ".-b" if funcs_ct == 1 else ".-", label=func_label)
         if legends_shown_ct < legends_to_show_ct and any(func_label is not None for func_label in func_labels):
-            ax10.legend(fontsize=legend_fontsize)   # fontsize argument only used if prop argument is not specified.
+            ax_curr.legend(fontsize=legend_fontsize)   # fontsize argument only used if prop argument is not specified.
             legends_shown_ct += 1
-        ax10.set_xlabel(x_names["s"])
-        # theoretically, there should be no lower limit on s, but non-positive values throw an error in the function
-        # ax00.set_xlim([0, None])
-        ax10.set_xlim([0, max(plot_s_s)])
-        ax10.set_ylabel(r"$s\cdot$"+func_name["s"])
-        ax10.title.set_text("Laplace x s")
-        ax10.grid(which="major")
-        ax10.grid(which="minor", alpha=0.75, linestyle=":")
-        ax10.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
-        ax10.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+        ax_curr.set_xlabel(plot_props.get("s").get("x").get("name"))  # plot_props["t"]["x"]["name"]
+        ax_curr.set_ylabel(r"$s\cdot$"+plot_props.get("s").get("y").get("name"))
+        ax_curr.set_xscale(plot_props.get("s").get("x").get("scale") or "linear")
+        ax_curr.set_yscale(plot_props.get("s").get("y").get("scale") or "linear")
+        for each_axis, each_scale in [(ax_curr.xaxis, ax_curr.get_xscale()),
+                                      (ax_curr.yaxis, ax_curr.get_yscale()), ]:
+            if each_scale == "linear":
+                each_axis.set_minor_locator(
+                    matplotlib.ticker.AutoMinorLocator()
+                )
+                # theoretically, there should be no lower limit on s, but non-positive values throw an error in the function
+                ax_curr.set_xlim([0, None])
+                #ax_curr.set_xlim([0, max(plot_s_s)])
+            elif each_scale == "log":
+                each_axis.set_minor_locator(
+                    matplotlib.ticker.LogLocator(base=10, subs=np.arange(2, 10), numticks=10 * each_axis.get_tick_space())
+                )
+        ax_curr.grid(which="major")
+        ax_curr.grid(which="minor", alpha=0.75, linestyle=":")
+        ax_curr.title.set_text(r"$s\times$Laplace")
 
     if any(inverted_vals_analytical is not None for inverted_vals_analytical in inverted_vals_analytical_all):
+        ax_curr = ax11
         for inverted_vals_analytical in inverted_vals_analytical_all:
-            ax11.plot(plot_times_anal, inverted_vals_analytical, ".-y" if funcs_ct == 1 else ".-")
-        ax11.set_xlabel(x_names.get("t_anal") or x_names["t"])
-        ax11.set_xlim([0, max(plot_times_anal)])
-        ax11.set_ylabel(func_name.get("t_anal") or func_name["t"])
-        ax11.title.set_text("Analytical Inverse Laplace")
-        ax11.grid(which="major")
-        ax11.grid(which="minor", alpha=0.75, linestyle=":")
-        ax11.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
-        ax11.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+            ax_curr.plot(plot_times_anal, inverted_vals_analytical, ".-y" if funcs_ct == 1 else ".-")
+
+        ax_curr.set_xlabel( (plot_props.get("t_anal") or plot_props.get("t")).get("x").get("name"))
+        ax_curr.set_ylabel( (plot_props.get("t_anal") or plot_props.get("t")).get("y").get("name"))
+        ax_curr.set_xscale( (plot_props.get("t_anal") or plot_props.get("t")).get("x").get("scale") or "linear")
+        ax_curr.set_yscale( (plot_props.get("t_anal") or plot_props.get("t")).get("y").get("scale") or "linear")
+        for each_axis, each_scale in [(ax_curr.xaxis, ax_curr.get_xscale()),
+                                      (ax_curr.yaxis, ax_curr.get_yscale()), ]:
+            if each_scale == "linear":
+                each_axis.set_minor_locator(
+                    matplotlib.ticker.AutoMinorLocator()
+                )
+                ax_curr.set_xlim([0, None])
+                #ax_curr.set_xlim([0, max(plot_times_anal)])
+            elif each_scale == "log":
+                base = 10
+                each_axis.set_minor_locator(
+                    matplotlib.ticker.LogLocator(base=base, subs=np.arange(2, base), numticks=base*each_axis.get_tick_space())
+                )
+        ax_curr.grid(which="major")
+        ax_curr.grid(which="minor", alpha=0.75, linestyle=":")
+        ax_curr.title.set_text("Analytical Inverse Laplace")
 
 
         if not do_plot_laplace_times_s:
+            ax_curr = ax10
             if is_in_anal_times_too.any():
                 for inversion_error in inversion_error_all:
-                    #ax10.plot(plot_times_anal[is_in_num_times_too], inversion_error * 100.0, ".-g")
-                    ax10.plot(plot_times_anal[is_in_num_times_too], inversion_error, ".-g" if funcs_ct == 1 else ".-")
+                    #ax_curr.plot(plot_times_anal[is_in_num_times_too], inversion_error * 100.0, ".-g")
+                    ax_curr.plot(plot_times_anal[is_in_num_times_too], inversion_error, ".-g" if funcs_ct == 1 else ".-")
                 if all(min(abs(inversion_error * 100.0)) < 0.1 for inversion_error in inversion_error_all):
-                    ax10.set_ylim([-100, 100])
+                    ax_curr.set_ylim([-100, 100])
                 else:
                     # Center y axis around 0
                     yabs_max = abs(max(ax10.get_ylim(), key=abs))*1.1
-                    ax10.set_ylim(bottom=-yabs_max, top=yabs_max)
+                    ax_curr.set_ylim(bottom=-yabs_max, top=yabs_max)
                     """ 
                     # Force 0 to be in the y axis range
-                    if max(ax10.get_ylim()) < 0:
-                        ax10.set_ylim(top=0)
-                    elif min(ax10.get_ylim()) > 0:
-                        ax10.set_ylim(bottom=0)
+                    if max(ax_curr.get_ylim()) < 0:
+                        ax_curr.set_ylim(top=0)
+                    elif min(ax_curr.get_ylim()) > 0:
+                        ax_curr.set_ylim(bottom=0)
                     """
             else:
-                ax10.set_ylim([-100, 100])
-            ax10.set_xlabel(x_names["t"])
-            ax10.set_xlim([0, None])
-            ax10.set_ylabel(func_name["t"])
-            #ax10.set_ylabel("% error: (Numer-Anal)/Anal")
-            ax10.set_ylabel(r"% $error=\frac{f_{Numer}(t)-f_{Anal}(t)}{f_{Anal}(t)}$")
+                ax_curr.set_ylim([-100, 100])
+
+            ax_curr.set_xlabel(plot_props.get("t").get("x").get("name"))
+            #ax_curr.set_ylabel(plot_props.get("t").get("y").get("name"))
+            ax_curr.set_ylabel(r"% $error=\frac{f_{Numer}(t)-f_{Anal}(t)}{f_{Anal}(t)}$")
+            ax_curr.set_xscale(plot_props.get("t").get("x").get("scale") or "linear")
+            ax_curr.set_yscale(plot_props.get("t").get("y").get("scale") or "linear")
+            for each_axis, each_scale in [(ax_curr.xaxis, ax_curr.get_xscale()),
+                                          (ax_curr.yaxis, ax_curr.get_yscale()), ]:
+                if each_scale == "linear":
+                    each_axis.set_minor_locator(
+                        matplotlib.ticker.AutoMinorLocator()
+                    )
+                    ax_curr.set_xlim([0, None])
+                elif each_scale == "log":
+                    each_axis.set_minor_locator(
+                        matplotlib.ticker.LogLocator(base=10, subs=np.arange(2, 10), numticks=10 * each_axis.get_tick_space())
+                    )
+            ax_curr.grid(which="major")
+            ax_curr.grid(which="minor", alpha=0.75, linestyle=":")
+            ax_curr.title.set_text("Percent Error")
+
             # Note- if a y value is 0.5, then percentformatter makes it 0.5% not 50%.
             # Thus have to multiply by 100 before getting the y values.
-            ax10.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter())
-
-            ax10.title.set_text("Percent Error")
-            ax10.grid(which="major")
-            ax10.grid(which="minor", alpha=0.75, linestyle=":")
-            ax10.xaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
-            ax10.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator())
+            ax_curr.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter())
 
     elif subplot_row_ct >= 2:
-        ax11.axis("off")
+        ax_curr = ax11
+        ax_curr.axis("off")
 
     assert all(len(data) == funcs_ct for data in [laplace_vals_all,inverted_vals_numerical_all,inverted_vals_analytical_all])
     if return_singles:

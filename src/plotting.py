@@ -36,19 +36,19 @@ def overlap(a, b, ):
 def format_axes(ax_curr,
                 plot_x_vals=None,
                 plot_y_vals=None,   # Usually not entered to not set limits on y
-                plot_props={},
-                key="",
+                plot_props=collections.defaultdict(dict),  # default value is {} when accessed via plot_props["missing_key"]. Does not change output access via .get(.)
+                key="",  # common values include "t", "s", "t_anal", ec
                 default_scale="linear",  # i.e. {"linear","log"}
                 default_log_base=10,
                 ):
     log_base = default_log_base
-    ax_curr.set_xlabel(plot_props.get(key,{}).get("x",{}).get("name"))  # aka plot_props[key]["x"]["name"]
+    ax_curr.set_xlabel(plot_props.get(key,{}).get("x",{}).get("name"))  # .get(.) takes key and default value as inputs
     ax_curr.set_ylabel(plot_props.get(key,{}).get("y",{}).get("name"))
-    ax_curr.set_xscale(plot_props.get(key,{}).get("x",{}).get("scale", default=default_scale))
-    ax_curr.set_yscale(plot_props.get(key,{}).get("y",{}).get("scale", default=default_scale))
-    for each_axis, each_scale, each_set_lim, each_data in [
-        (ax_curr.xaxis, ax_curr.get_xscale(), ax_curr.set_xlim, plot_x_vals),
-        (ax_curr.yaxis, ax_curr.get_yscale(), ax_curr.set_ylim, plot_y_vals),
+    ax_curr.set_xscale(plot_props.get(key,{}).get("x",{}).get("scale", default_scale))
+    ax_curr.set_yscale(plot_props.get(key,{}).get("y",{}).get("scale", default_scale))
+    for axis_type, each_axis, each_scale, each_set_lim, each_data in [
+        ("x", ax_curr.xaxis, ax_curr.get_xscale(), ax_curr.set_xlim, plot_x_vals),
+        ("y", ax_curr.yaxis, ax_curr.get_yscale(), ax_curr.set_ylim, plot_y_vals),
     ]:
         if each_scale == "linear":
             each_axis.set_minor_locator(
@@ -77,7 +77,8 @@ def plot_laplace_analysis(funcs,  # func (funcs) can either be a function or an 
                           plot_s=None,
                           plot_s_s=None,
                           plot_times=None,
-                          time_const=1,  # default is times area already nondimensional, otherwise, divide by this to become nondimensional
+                          time_const=None,  # default is times area already nondimensional (aka time_const=1), otherwise, divide by this to become nondimensional
+                          tg=None,   # deprecated, replaced by time_const
                           input_times_anal=None,
                           plot_times_anal=None,
                           inv_funcs_anal=None,  # Has to be None or a list of same length as func (if so, each element can still be None)
@@ -97,6 +98,12 @@ def plot_laplace_analysis(funcs,  # func (funcs) can either be a function or an 
     if not y_names and func_name:
         warnings.warn("deprecated", DeprecationWarning)
         y_names = func_name
+    if not time_const:
+        if tg:
+            warnings.warn("deprecated", DeprecationWarning)
+            time_const = tg
+        else:
+            time_const = 1
     if not funcs and func:
         warnings.warn("deprecated", DeprecationWarning)
         funcs = func
@@ -125,26 +132,29 @@ def plot_laplace_analysis(funcs,  # func (funcs) can either be a function or an 
     ####################################################
     # SET SOME DEFAULTS
     ####################################################
-    if not plot_times:
+    if plot_times is None:   # can't just do "if not plot_times" since truth value of an array is ambiguous
         plot_times = input_times
-    if not plot_s:
+    if plot_s is None:
         plot_s = input_s
 
     if plot_props.get("t_anal"):
-        # Create a deep copy of the dict as well as all subdicts so changes to the new one are not made to the old one too
+        # Create a deep copy of the dict and all subdicts so that changes to the new one are not made to the old one too
         plot_props["t_anal"] = copy.deepcopy(plot_props.get("t"))
     if not plot_props.get("t_error"):
         plot_props["t_error"] = copy.deepcopy(plot_props.get("t"))
         plot_props.get("t_error").get("y")["name"] = r"% $error=\frac{f_{Numer}(t)-f_{Anal}(t)}{f_{Anal}(t)}$"
-    if not plot_props.get("sx"):
+    if not plot_props.get("sx"):  # stands for "s x Laplace"
         plot_props["sx"] = copy.deepcopy(plot_props.get("s"))
         plot_props.get("sx").get("y")["name"] = r"$s\cdot$" + plot_props.get("s").get("y").get("name")
 
     return_singles = False
-    if not isinstance(funcs, collections.abc.Iterable):
+    # Collection guarantees only __contains__, __iter__, __len__ methods
+    # Need __len__ for assess len and confirming the lens match up between different collections
+    # __iter__ is needed to iterate
+    if not isinstance(funcs, collections.abc.Collection):
         funcs = [funcs]
         return_singles = True
-    if not isinstance(inv_funcs_anal, collections.abc.Iterable):
+    if not isinstance(inv_funcs_anal, collections.abc.Collection):
         inv_funcs_anal = [inv_funcs_anal] * len(funcs)
     if func_labels is None:
         func_labels = [None] * len(funcs)
@@ -325,16 +335,16 @@ def plot_laplace_analysis(funcs,  # func (funcs) can either be a function or an 
         ax_curr = ax11
         ax_curr.axis("off")
 
-    assert all(len(data) == funcs_ct for data in [
+    assert all(len(outputted_results) == funcs_ct for outputted_results in [
         laplace_vals_all, inverted_vals_numerical_all, inverted_vals_analytical_all
     ])
     if return_singles:
         assert funcs_ct == 1
-        # .pop is like accessing an element (like [0]) but works for non-indexable collections (like sets) too; Note-
-        # pop removes an element from the collection while returning it
-        laplace_vals_all = laplace_vals_all.pop()
-        inverted_vals_numerical_all = inverted_vals_numerical_all.pop()
-        inverted_vals_analytical_all = inverted_vals_analytical_all.pop()
+        # next(iter(var)) instead of just var[0] because var doesn't have to be a list, just any collection (thus, only guarantees having __contains__, __iter__, __len__ methods)
+        # This way, you can still access the first (and only) element, which should be a numpy array
+        laplace_vals_all             = next(iter(laplace_vals_all))
+        inverted_vals_numerical_all  = next(iter(inverted_vals_numerical_all))
+        inverted_vals_analytical_all = next(iter(inverted_vals_analytical_all))
 
     return fig, axs, laplace_vals_all, inverted_vals_numerical_all, inverted_vals_analytical_all
 

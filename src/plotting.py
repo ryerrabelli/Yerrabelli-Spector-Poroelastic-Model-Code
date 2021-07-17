@@ -5,6 +5,7 @@ import matplotlib.ticker
 import time as timer
 import collections
 import copy
+import warnings
 import itertools
 
 #from src.euler_inversion import euler_inversion
@@ -36,13 +37,15 @@ def format_axes(ax_curr,
                 plot_x_vals=None,
                 plot_y_vals=None,   # Usually not entered to not set limits on y
                 plot_props={},
-                key=""
+                key="",
+                default_scale="linear",  # i.e. {"linear","log"}
+                default_log_base=10,
                 ):
-    log_base = 10
-    ax_curr.set_xlabel(plot_props.get(key).get("x").get("name"))  # aka plot_props[key]["x"]["name"]
-    ax_curr.set_ylabel(plot_props.get(key).get("y").get("name"))
-    ax_curr.set_xscale(plot_props.get(key).get("x").get("scale") or "linear")
-    ax_curr.set_yscale(plot_props.get(key).get("y").get("scale") or "linear")
+    log_base = default_log_base
+    ax_curr.set_xlabel(plot_props.get(key,{}).get("x",{}).get("name"))  # aka plot_props[key]["x"]["name"]
+    ax_curr.set_ylabel(plot_props.get(key,{}).get("y",{}).get("name"))
+    ax_curr.set_xscale(plot_props.get(key,{}).get("x",{}).get("scale", default=default_scale))
+    ax_curr.set_yscale(plot_props.get(key,{}).get("y",{}).get("scale", default=default_scale))
     for each_axis, each_scale, each_set_lim, each_data in [
         (ax_curr.xaxis, ax_curr.get_xscale(), ax_curr.set_xlim, plot_x_vals),
         (ax_curr.yaxis, ax_curr.get_yscale(), ax_curr.set_ylim, plot_y_vals),
@@ -54,19 +57,23 @@ def format_axes(ax_curr,
             if each_data is not None:
                 # t shouldn't be negative and while theoretically, there should be no lower limit on s, non-positive
                 # s values throw an error in the function
-                each_set_lim([min(0, *each_data), max(*each_data)])
+                each_set_lim([min(0, *each_data), max(*each_data)])  # *{"a":1,"b":2} converts dict to separate arguments i.e. a=1, b=2. This is necessary for finding the min of either 0 or each_data
         elif each_scale == "log":
             each_axis.set_minor_locator(
-                matplotlib.ticker.LogLocator(base=log_base, subs=np.arange(2, log_base), numticks=log_base * each_axis.get_tick_space())
+                matplotlib.ticker.LogLocator(base=log_base, subs=np.arange(2, log_base),
+                                             numticks=log_base * each_axis.get_tick_space())
             )
-    ax_curr.grid(which="major")
-    ax_curr.grid(which="minor", alpha=0.75, linestyle=":")
+    ax_curr.grid(which="major")  # set major grid lines
+    ax_curr.grid(which="minor", alpha=0.75, linestyle=":")  # set minor grid lines, but make them less visible
 
 
-def plot_laplace_analysis(func,  # func (funcs) can either be a function or an iterable of functions
-                          plot_props,
+def plot_laplace_analysis(funcs,  # func (funcs) can either be a function or an iterable of functions
                           input_s,  # input_s should include all values of plot_s
                           input_times,  # input_times should include all values of plot_times
+                          plot_props=collections.defaultdict(dict),
+                          y_names={},  # deprecated as plot_props is preferred (also replaced prior func_name argument)
+                          x_names={},  # deprecated as plot_props is preferred
+                          func_name={},  # deprecated, replaced by y_names, which was then deprecated for plot_props
                           plot_s=None,
                           plot_s_s=None,
                           plot_times=None,
@@ -81,25 +88,58 @@ def plot_laplace_analysis(func,  # func (funcs) can either be a function or an i
                           legends_to_show_ct=1,
                           legend_fontsize="small",  # string values for fontsize are relative, while int are absolute in pts. String values: {'xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large'}
                           do_plot_laplace_times_s=True,
+                          func=None,  # deprecated, replaced by funcs
                           ):
+
+    ####################################################
+    # CREATE COMPATIBILITY WITH DEPRECATED ARGUMENTS
+    ####################################################
+    if not y_names and func_name:
+        warnings.warn("deprecated", DeprecationWarning)
+        y_names = func_name
+    if not funcs and func:
+        warnings.warn("deprecated", DeprecationWarning)
+        funcs = func
+    if not plot_props and (x_names or y_names):
+        warnings.warn("deprecated", DeprecationWarning)
+        """plot_props = {
+            "t":{"y":{"name":r"$\sigma(\frac{t}{t_g})$"}, "x":{"name":r"$\overline{\sigma}(s)$", "scale":"linear"}},
+            "s":{"y":{"name":r"$t/t_g$, unitless"},  "x":{"name":r"$s$, unitless"}},
+        }"""
+        """
+        plot_props = {
+            key1: {"y":{"name":y_name}, "x":{"name":x_name}} for ((key1, y_name), (key2, x_name)) in zip(y_names.items(), x_names.items()) if key1==key2
+        }"""
+        # Get the union of the keys of each set. They really should be the same, but this is just better logic
+        # all_plot_type_keys is often a set like {"t", "s", "t_anal"}
+        all_plot_type_keys = set(x_names) | set(y_names)
+        plot_props = collections.defaultdict(dict, {
+            key: {"y": {"name": y_names.get(key)}, "x": {"name": x_names.get(key)}} for key in all_plot_type_keys
+        })
+    else:
+        # Can define the other values based off of these, but don't need to as they have been phased out
+        # y_names = {key: val["y"]["name"] for key, val in plot_props.items()}
+        # x_names = {key: val["x"]["name"] for key, val in plot_props.items()}
+        pass
 
     ####################################################
     # SET SOME DEFAULTS
     ####################################################
-    if plot_times is None:
+    if not plot_times:
         plot_times = input_times
-    if plot_s is None:
+    if not plot_s:
         plot_s = input_s
 
-    if plot_props.get("t_anal") is None:
-        plot_props["t_anal"] = copy.deepcopy(plot_props.get("t"))   # the dict constructor causes a shallow copy to be made
-    if plot_props.get("t_error") is None:
+    if plot_props.get("t_anal"):
+        # Create a deep copy of the dict as well as all subdicts so changes to the new one are not made to the old one too
+        plot_props["t_anal"] = copy.deepcopy(plot_props.get("t"))
+    if not plot_props.get("t_error"):
         plot_props["t_error"] = copy.deepcopy(plot_props.get("t"))
         plot_props.get("t_error").get("y")["name"] = r"% $error=\frac{f_{Numer}(t)-f_{Anal}(t)}{f_{Anal}(t)}$"
-    if plot_props.get("sx") is None:
+    if not plot_props.get("sx"):
         plot_props["sx"] = copy.deepcopy(plot_props.get("s"))
         plot_props.get("sx").get("y")["name"] = r"$s\cdot$" + plot_props.get("s").get("y").get("name")
-    funcs = func
+
     return_singles = False
     if not isinstance(funcs, collections.abc.Iterable):
         funcs = [funcs]
@@ -125,8 +165,7 @@ def plot_laplace_analysis(func,  # func (funcs) can either be a function or an i
     else:
         plot_s_s_indices_in_input = len(plot_s) + np.arange(len(plot_s_s))
 
-    # func_name = {key: val["y"]["name"] for key, val in plot_props.items()}
-    # x_names = {key: val["x"]["name"] for key, val in plot_props.items()}
+
     # Default values
     # funcs = itertools.repeat(None)
     # laplace_vals_all = itertools.repeat(None)

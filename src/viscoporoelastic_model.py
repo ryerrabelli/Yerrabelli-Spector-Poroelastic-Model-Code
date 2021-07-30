@@ -32,27 +32,27 @@ Err = 1;
 """
 
 
-class LaplaceModel(abc.ABC):
+class LaplaceModel(abc.ABC):  # inheriting from abc.ABC means that this is abstract base class
     @classmethod
     @abc.abstractmethod
-    def get_predefined_constants(cls): raise NotImplementedError()
+    def get_predefined_constants(cls) -> tuple: raise NotImplementedError()
 
     @staticmethod
     @abc.abstractmethod
-    def get_predefined_constant_names(): raise NotImplementedError()
+    def get_predefined_constant_names() -> tuple: raise NotImplementedError()
 
-    def get_parameters(self):
+    def get_parameters(self) -> tuple:
         return ()  # zero-length tuple, aka tuple()
 
     @staticmethod
-    def get_parameter_names():
+    def get_parameter_names() -> tuple:
         return ()  # zero-length tuple, aka tuple()
 
-    def get_calculable_constants(self):
+    def get_calculable_constants(self) -> tuple:
         return ()  # zero-length tuple, aka tuple()
 
     @staticmethod
-    def get_calculable_constant_names():
+    def get_calculable_constant_names() -> tuple:
         return ()  # zero-length tuple, aka tuple()
 
     @abc.abstractmethod
@@ -99,188 +99,16 @@ class LaplaceModel(abc.ABC):
         return cls.__name__
 
 
-class AnalyticallyInvertableModel(LaplaceModel, abc.ABC):
+class AnalyticallyInvertableModel(LaplaceModel, abc.ABC):    # inheriting from abc.ABC means that this is abstract base class
     def inverted_value(self, t): return NotImplemented
 
 
-class ViscoporoelasticModel0(LaplaceModel):
-    ## PARAMETERS
-    ## Predefined constants
-    eps0 = 0.1;  # 10 percent
-    strain_rate = 0.1;  # 1 percent per s (normally 1#/s)
-    ## Below are directly determined by the mesh deformation part of the
-    ## experiment (see our paper with Daniel).  -Dr. Spector
-    Vrz = 0.5;  # Not actually v, but greek nu (represents Poisson's ratio)
-    Ezz = 10;  # Note- don't mix up Ezz with epszz
-
-    def __init__(self):
-        self.c = 1;
-        self.tau1 = 1;
-        self.tau2 = 1;
-        # tau = [tau1, tau2];
-        # tau = [1 1];
-        self.tg = 40.62;  # in units of s   # for porosity_sp == 0.5
-        self.Vrtheta = 1;  # Not actually v, but greek nu (represents Poisson's ratio)
-        self.Err = 1;
-
-    @classmethod
-    def get_predefined_constants(cls):
-        return cls.eps0, cls.strain_rate, cls.Vrz, cls.Ezz
-        #return type(self).eps0, type(self).strain_rate, type(self).Vrz, type(self).Ezz
-
-    @staticmethod
-    def get_predefined_constant_names():
-        return "eps0", "strain_rate", "Vrz", "Ezz"
-
+class FittableLaplaceModel(LaplaceModel, abc.ABC):    # inheriting from abc.ABC means that this is abstract base class
     # This is not a static method as fitted parameters depend on the instance (note- the names are still same though)
-    def get_fitted_parameters(self):
-        return self.c, self.tau1, self.tau2, self.tg, self.Vrtheta, self.Err;
+    def get_fitted_parameters(self) -> tuple: raise NotImplementedError
 
     @staticmethod
-    def get_fitted_parameter_names():
-        return "c", "tau1", "tau2", "time_const", "Vrtheta", "Err"
-
-    def get_parameters(self): return self.get_fitted_parameters()
-
-    @classmethod
-    def get_parameter_names(cls): return cls.get_fitted_parameter_names()
-
-    @classmethod
-    def get_var_categories(cls):
-        return ("Constant",)    * len(cls.get_predefined_constant_names()) + \
-               ("FittedParam",) * len(cls.get_fitted_parameter_names())
-
-    def set_fitted_parameters(self,
-                          ## Fitted parameters (to be determined by experimental fitting to
-                          # the unknown material)
-                          c=None,
-                          tau1=None,
-                          tau2=None,  # tau = [tau1, tau2];
-                          tg=None,  # in units of s   # for porosity_sp == 0.5
-                          Vrtheta=None,  # Not actually v, but greek nu (represents Poisson's ratio)
-                          Err=None,
-                          ):
-        if c is not None:
-            self.c = c
-        if tau1 is not None:
-            self.tau1 = tau1
-        if tau2 is not None:
-            self.tau2 = tau2
-        if tg is not None:
-            self.tg = tg
-        if Vrtheta is not None:
-            self.Vrtheta = Vrtheta
-        if Err is not None:
-            self.Err = Err
-        return self.get_fitted_parameters()
-
-    def laplace_value(self,
-                      s,
-                      ## Fitted parameters (to be determined by experimental fitting to
-                      # the unknown material)
-                      c=None,
-                      tau1=None,
-                      tau2=None,  # tau = [tau1, tau2];
-                      tg=None,  # in units of s   # for porosity_sp == 0.5
-                      Vrtheta=None,  # Not actually v, but greek nu (represents Poisson's ratio)
-                      Err=None,
-                      ):
-
-        """
-        self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, time_const=time_const, Vrtheta=Vrtheta, Err=Err)
-        c = self.c;
-        tau1 = self.tau1;
-        tau2 = self.tau2;
-        # tau = [tau1, tau2];
-        # tau = [1 1];
-        time_const = self.time_const;  # in units of s   # for porosity_sp == 0.5
-        Vrtheta = self.Vrtheta;  # Not actually v, but greek nu (represents Poisson's ratio)
-        Err = self.Err;
-        """
-        c, tau1, tau2, tg, Vrtheta, Err = self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, tg=tg, Vrtheta=Vrtheta, Err=Err)
-
-        eps0, strain_rate, Vrz, Ezz = self.get_predefined_constants()
-
-
-        #print(s)
-        ## BASE EQUATIONS
-        #  1
-        #eps0 = strain_rate * t0
-        t0 = eps0/strain_rate;
-        # TODO: Confirm the TestModel4 epszz expression from Dr. Spector as this seems to be different from the one
-        #  for the viscoporoelastic model
-        epszz = 1 - exp(-s*t0)/(s*s);  ##  Laplace transform of the axial strain
-
-
-
-        #  2
-        Srr     = 1/Err;
-        Srtheta = -Vrtheta/Err;
-        Srz     = -Vrz/Err;
-        Szz     = 1/Ezz;
-        #Sij     = [Srr, Srtheta, Srz;   Srtheta, Srr, Srz;   Srz, Srz, Szz];
-
-        #  3
-        alpha   =  2*Srz*Srz-Szz*Srtheta-Srr*Szz;
-        C13     =   Srz/(alpha);
-        C33     =  -(Srr+Srtheta)/(alpha);
-
-
-        #  4
-        g       =  -(2*Srz+Szz)*(Srr-Srtheta)/(alpha);
-
-        #  5
-        # Note- below could be simplified bc both divided and multiplied by 2
-        f1      =  -(2*Srz+Szz)/2 * 2*(Srr*Szz-Srz*Srz)/(alpha);
-
-        #  6
-        # Viscoelastic parameters: c, tau 1, tau 2
-        f2      = 1 + c*ln( (1+s*tau2)/(1+s*tau1) );
-
-        #  7
-        # Note- Ehat is a function of Sij although wasn't stated in Spector's notes
-        Ehat    =  -2*(Srr*Szz-Srz*Srz)/(alpha);
-
-
-        #  8
-        #f      =  r0^2*s / (Ehat*k*f2(c,tau1,tau2))
-        # Simplified using time_const=r0^2/(Ehat*k)
-        # !!Confirm should be a function of c, tau also maybe Sij or time_const
-        f       = tg * s/f2;
-
-
-
-        sigbar  =  \
-            2*epszz*(\
-                C13\
-                    *(\
-                        g \
-                            * I1(sqrt(f))/sqrt(f) \
-                            /(Ehat*I0(sqrt(f))-2*I1(sqrt(f))/sqrt(f)) \
-                        -1/2 \
-                    ) \
-                + C33/2 \
-                + f1\
-                    *f2*\
-                    (I0(sqrt(f))-2*I1(sqrt(f))/sqrt(f))\
-                    /(2 * ( Ehat*I0(sqrt(f)) - I1(sqrt(f))/sqrt(f) ) ) \
-            );
-
-
-        return sigbar
-
-
-        def test():
-            import time as timer
-            # inputting a value of time=0 doesn't error (just returns None/NaN), but takes longer (about 2x as much) on python; not really MATLAB though
-            times=np.array([2,3])
-            times = np.arange(0.05, 5.05, 0.05)
-            from euler_inversion import euler_inversion
-            t1=timer.time();
-            sigma=euler_inversion(self.laplace_function, times)
-            print(sigma)
-            t2=timer.time()-t1
-            print(t2)
+    def get_fitted_parameter_names() -> tuple: raise NotImplementedError
 
 
 class TestModel1(LaplaceModel):
@@ -510,6 +338,180 @@ class TestModel4(LaplaceModel):   # Dr. Spector sent this to me May 29, 2021
         epszz = eps0*(1 - exp(-s*t0/tg))/(s*s);  ##  Laplace transform of the axial strain
         f_prime = epszz * (3*I0(sqrt(s))-4*C0*I1(sqrt(s))/sqrt(s)) / (I0(sqrt(s))-C0*I1(sqrt(s))/sqrt(s))
         return f_prime
+
+
+class ViscoporoelasticModel0(LaplaceModel):
+    ## PARAMETERS
+    ## Predefined constants
+    eps0 = 0.1;  # 10 percent
+    strain_rate = 0.1;  # 1 percent per s (normally 1#/s)
+    ## Below are directly determined by the mesh deformation part of the
+    ## experiment (see our paper with Daniel).  -Dr. Spector
+    Vrz = 0.5;  # Not actually v, but greek nu (represents Poisson's ratio)
+    Ezz = 10;  # Note- don't mix up Ezz with epszz
+
+    def __init__(self):
+        self.c = 1;
+        self.tau1 = 1;
+        self.tau2 = 1;
+        # tau = [tau1, tau2];
+        # tau = [1 1];
+        self.tg = 40.62;  # in units of s   # for porosity_sp == 0.5
+        self.Vrtheta = 1;  # Not actually v, but greek nu (represents Poisson's ratio)
+        self.Err = 1;
+
+    @classmethod
+    def get_predefined_constants(cls):
+        return cls.eps0, cls.strain_rate, cls.Vrz, cls.Ezz
+        #return type(self).eps0, type(self).strain_rate, type(self).Vrz, type(self).Ezz
+
+    @staticmethod
+    def get_predefined_constant_names():
+        return "eps0", "strain_rate", "Vrz", "Ezz"
+
+    # This is not a static method as fitted parameters depend on the instance (note- the names are still same though)
+    def get_fitted_parameters(self):
+        return self.c, self.tau1, self.tau2, self.tg, self.Vrtheta, self.Err;
+
+    @staticmethod
+    def get_fitted_parameter_names():
+        return "c", "tau1", "tau2", "time_const", "Vrtheta", "Err"
+
+    def get_calculable_constants(self) -> tuple:
+        t0 = self.eps0/self.strain_rate;
+        return (t0,)    # returns tuple of length 1
+
+    @staticmethod
+    def get_calculable_constant_names() -> tuple:
+        return ("t0",)  # returns tuple of length 1
+
+    def get_parameters(self): return self.get_fitted_parameters()
+
+    @classmethod
+    def get_parameter_names(cls): return cls.get_fitted_parameter_names()
+
+    @classmethod
+    def get_var_categories(cls):
+        return ("Constant",)    * len(cls.get_predefined_constant_names()) + \
+               ("FittedParam",) * len(cls.get_fitted_parameter_names())
+
+    def set_fitted_parameters(self,
+                          ## Fitted parameters (to be determined by experimental fitting to
+                          # the unknown material)
+                          c=None,
+                          tau1=None,
+                          tau2=None,  # tau = [tau1, tau2];
+                          tg=None,  # in units of s   # for porosity_sp == 0.5
+                          Vrtheta=None,  # Not actually v, but greek nu (represents Poisson's ratio)
+                          Err=None,
+                          ):
+        if c is not None:
+            self.c = c
+        if tau1 is not None:
+            self.tau1 = tau1
+        if tau2 is not None:
+            self.tau2 = tau2
+        if tg is not None:
+            self.tg = tg
+        if Vrtheta is not None:
+            self.Vrtheta = Vrtheta
+        if Err is not None:
+            self.Err = Err
+        return self.get_fitted_parameters()
+
+    def laplace_value(self,
+                      s,
+                      ## Fitted parameters (to be determined by experimental fitting to
+                      # the unknown material)
+                      c=None,
+                      tau1=None,
+                      tau2=None,  # tau = [tau1, tau2];
+                      tg=None,  # in units of s   # for porosity_sp == 0.5
+                      Vrtheta=None,  # Not actually v, but greek nu (represents Poisson's ratio)
+                      Err=None,
+                      ):
+
+        """
+        self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, time_const=time_const, Vrtheta=Vrtheta, Err=Err)
+        c = self.c;
+        tau1 = self.tau1;
+        tau2 = self.tau2;
+        # tau = [tau1, tau2];
+        # tau = [1 1];
+        time_const = self.time_const;  # in units of s   # for porosity_sp == 0.5
+        Vrtheta = self.Vrtheta;  # Not actually v, but greek nu (represents Poisson's ratio)
+        Err = self.Err;
+        """
+        c, tau1, tau2, tg, Vrtheta, Err = self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, tg=tg, Vrtheta=Vrtheta, Err=Err)
+
+        eps0, strain_rate, Vrz, Ezz = self.get_predefined_constants()
+
+
+        #print(s)
+        ## BASE EQUATIONS
+        #  1
+        #eps0 = strain_rate * t0
+        t0 = eps0/strain_rate;
+        # TODO: Confirm the TestModel4 epszz expression from Dr. Spector as this seems to be different from the one
+        #  for the viscoporoelastic model
+        epszz = 1 - exp(-s*t0)/(s*s);  ##  Laplace transform of the axial strain
+
+
+
+        #  2
+        Srr     = 1/Err;
+        Srtheta = -Vrtheta/Err;
+        Srz     = -Vrz/Err;
+        Szz     = 1/Ezz;
+        #Sij     = [Srr, Srtheta, Srz;   Srtheta, Srr, Srz;   Srz, Srz, Szz];
+
+        #  3
+        alpha   =  2*Srz*Srz-Szz*Srtheta-Srr*Szz;
+        C13     =   Srz/(alpha);
+        C33     =  -(Srr+Srtheta)/(alpha);
+
+
+        #  4
+        g       =  -(2*Srz+Szz)*(Srr-Srtheta)/(alpha);
+
+        #  5
+        # Note- below could be simplified bc both divided and multiplied by 2
+        f1      =  -(2*Srz+Szz)/2 * 2*(Srr*Szz-Srz*Srz)/(alpha);
+
+        #  6
+        # Viscoelastic parameters: c, tau 1, tau 2
+        f2      = 1 + c*ln( (1+s*tau2)/(1+s*tau1) );
+
+        #  7
+        # Note- Ehat is a function of Sij although wasn't stated in Spector's notes
+        Ehat    =  -2*(Srr*Szz-Srz*Srz)/(alpha);
+
+
+        #  8
+        #f      =  r0^2*s / (Ehat*k*f2(c,tau1,tau2))
+        # Simplified using time_const=r0^2/(Ehat*k)
+        # !!Confirm should be a function of c, tau also maybe Sij or time_const
+        f       = tg * s/f2;
+
+
+
+        sigbar  =  \
+            2*epszz*(\
+                C13\
+                    *(\
+                        g \
+                            * I1(sqrt(f))/sqrt(f) \
+                            /(Ehat*I0(sqrt(f))-2*I1(sqrt(f))/sqrt(f)) \
+                        -1/2 \
+                    ) \
+                + C33/2 \
+                + f1\
+                    *f2*\
+                    (I0(sqrt(f))-2*I1(sqrt(f))/sqrt(f))\
+                    /(2 * ( Ehat*I0(sqrt(f)) - I1(sqrt(f))/sqrt(f) ) ) \
+            );
+
+        return sigbar
 
 
 class ArmstrongIsotropicModel(LaplaceModel):   # Dr. Spector sent this to me May 29, 2021, then revised it on Jun 11, 2021
@@ -797,6 +799,14 @@ class ViscoporoelasticModel2(LaplaceModel):
     def get_fitted_parameter_names():
         return "c", "tau1", "tau2", "tg", "v", "t0/tg"
 
+    def get_calculable_constants(self) -> tuple:
+        t0 = self.t0_tg * self.tg
+        return (t0,)    # returns tuple of length 1
+
+    @staticmethod
+    def get_calculable_constant_names() -> tuple:
+        return ("t0",)  # returns tuple of length 1
+
     def get_parameters(self): return self.get_fitted_parameters()
 
     @classmethod
@@ -907,10 +917,19 @@ class ViscoporoelasticModel1(LaplaceModel):
     def get_fitted_parameter_names():
         return "c", "tau1", "tau2", "tg", "Vrtheta", "Err"
 
+    def get_calculable_constants(self) -> tuple:
+        t0 = self.t0_tg * self.tg
+        return (t0,)    # returns tuple of length 1
+
+    @staticmethod
+    def get_calculable_constant_names() -> tuple:
+        return ("t0",)  # returns tuple of length 1
+
     def get_parameters(self): return self.get_fitted_parameters()
 
     @classmethod
     def get_parameter_names(cls): return cls.get_fitted_parameter_names()
+
 
     @classmethod
     def get_var_categories(cls):
@@ -1064,7 +1083,7 @@ class ViscoporoelasticModel1(LaplaceModel):
 class ViscoporoelasticModel3(LaplaceModel):
     ## PARAMETERS
     ## Predefined constants
-    t0_tg = 0.1;
+    t0_tg = 10/40.62;
     strain_rate = 0.1;  # 1 percent per s (normally 1#/s)
     ## Below are directly determined by the mesh deformation part of the
     ## experiment (see our paper with Daniel).  -Dr. Spector
@@ -1101,6 +1120,14 @@ class ViscoporoelasticModel3(LaplaceModel):
     @staticmethod
     def get_fitted_parameter_names():
         return "c", "tau1", "tau2", "tg", "Vrtheta", "Err"
+
+    def get_calculable_constants(self) -> tuple:
+        t0 = self.t0_tg * self.tg
+        return (t0,)    # returns tuple of length 1
+
+    @staticmethod
+    def get_calculable_constant_names() -> tuple:
+        return ("t0",)  # returns tuple of length 1
 
     def get_parameters(self): return self.get_fitted_parameters()
 

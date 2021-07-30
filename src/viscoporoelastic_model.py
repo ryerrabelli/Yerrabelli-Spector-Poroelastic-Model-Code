@@ -110,6 +110,12 @@ class FittableLaplaceModel(LaplaceModel, abc.ABC):    # inheriting from abc.ABC 
     @staticmethod
     def get_fitted_parameter_names() -> tuple: raise NotImplementedError
 
+    def get_parameters(self): return self.get_fitted_parameters()
+
+    @classmethod
+    def get_parameter_names(cls): return cls.get_fitted_parameter_names()
+
+
 
 class TestModel1(LaplaceModel):
     alpha = 0.5; tg = 7e-3; strain_rate = 1e-4; t0 = 1e3
@@ -340,7 +346,7 @@ class TestModel4(LaplaceModel):   # Dr. Spector sent this to me May 29, 2021
         return f_prime
 
 
-class ViscoporoelasticModel0(LaplaceModel):
+class ViscoporoelasticModel0(FittableLaplaceModel):
     ## PARAMETERS
     ## Predefined constants
     eps0 = 0.1;  # 10 percent
@@ -384,11 +390,6 @@ class ViscoporoelasticModel0(LaplaceModel):
     @staticmethod
     def get_calculable_constant_names() -> tuple:
         return ("t0",)  # returns tuple of length 1
-
-    def get_parameters(self): return self.get_fitted_parameters()
-
-    @classmethod
-    def get_parameter_names(cls): return cls.get_fitted_parameter_names()
 
     @classmethod
     def get_var_categories(cls):
@@ -514,7 +515,7 @@ class ViscoporoelasticModel0(LaplaceModel):
         return sigbar
 
 
-class ArmstrongIsotropicModel(LaplaceModel):   # Dr. Spector sent this to me May 29, 2021, then revised it on Jun 11, 2021
+class ArmstrongIsotropicModel(FittableLaplaceModel):   # Dr. Spector sent this to me May 29, 2021, then revised it on Jun 11, 2021
     """
     v = 0
     strain_rate = 0.0003  #1e-3  # s^-1
@@ -612,11 +613,6 @@ class ViscoporoelasticModel1(LaplaceModel):
     @staticmethod
     def get_fitted_parameter_names():
         return "c", "tau1", "tau2", "tg", "Vrtheta", "Err"
-
-    def get_parameters(self): return self.get_fitted_parameters()
-
-    @classmethod
-    def get_parameter_names(cls): return cls.get_fitted_parameter_names()
 
     @classmethod
     def get_var_categories(cls):
@@ -767,7 +763,7 @@ class ViscoporoelasticModel1(LaplaceModel):
         return sigbar
 
 
-class ViscoporoelasticModel2(LaplaceModel):
+class ViscoporoelasticModel2(FittableLaplaceModel):
 
     def __init__(self, c=2, tau1=0.001, tau2=10, tg=40.62, v=0.3, t0_tg=10):
         """
@@ -806,11 +802,6 @@ class ViscoporoelasticModel2(LaplaceModel):
     @staticmethod
     def get_calculable_constant_names() -> tuple:
         return ("t0",)  # returns tuple of length 1
-
-    def get_parameters(self): return self.get_fitted_parameters()
-
-    @classmethod
-    def get_parameter_names(cls): return cls.get_fitted_parameter_names()
 
     @classmethod
     def get_var_categories(cls):
@@ -876,7 +867,7 @@ class ViscoporoelasticModel2(LaplaceModel):
         return T_bar
 
 
-class ViscoporoelasticModel1(LaplaceModel):
+class ViscoporoelasticModel1(FittableLaplaceModel):
     ## PARAMETERS
     ## Predefined constants
     t0_tg = 0.1;
@@ -924,12 +915,6 @@ class ViscoporoelasticModel1(LaplaceModel):
     @staticmethod
     def get_calculable_constant_names() -> tuple:
         return ("t0",)  # returns tuple of length 1
-
-    def get_parameters(self): return self.get_fitted_parameters()
-
-    @classmethod
-    def get_parameter_names(cls): return cls.get_fitted_parameter_names()
-
 
     @classmethod
     def get_var_categories(cls):
@@ -1080,7 +1065,7 @@ class ViscoporoelasticModel1(LaplaceModel):
         return sigbar
 
 
-class ViscoporoelasticModel3(LaplaceModel):
+class ViscoporoelasticModel3(FittableLaplaceModel):
     ## PARAMETERS
     ## Predefined constants
     t0_tg = 10/40.62;
@@ -1128,11 +1113,6 @@ class ViscoporoelasticModel3(LaplaceModel):
     @staticmethod
     def get_calculable_constant_names() -> tuple:
         return ("t0",)  # returns tuple of length 1
-
-    def get_parameters(self): return self.get_fitted_parameters()
-
-    @classmethod
-    def get_parameter_names(cls): return cls.get_fitted_parameter_names()
 
     @classmethod
     def get_var_categories(cls):

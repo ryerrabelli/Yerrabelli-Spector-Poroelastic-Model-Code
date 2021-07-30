@@ -999,7 +999,7 @@ class ViscoporoelasticModel1(LaplaceModel):
 
         #  6 (<-5)
         # Note- below could be simplified bc both divided and multiplied by 2
-        f1      =  Ehat * (2*Srz+Szz)/2;
+        f1      =  -Ehat * (2*Srz+Szz)/2;
         #  6_2 (<-6)
         # Viscoelastic parameters: c, tau 1, tau 2
         f2      = 1 + c*ln( (1+s*tau2)/(1+s*tau1) );
@@ -1165,24 +1165,27 @@ class ViscoporoelasticModel3(LaplaceModel):
 
         #  3 (<-2)
         Srr = 1 / Err;
-        Srtheta = -Vrtheta / Err;
+        Srtheta = -Vrtheta / Err;   #Srσ
         Srz = -Vrz / Err;
         Szz = 1 / Ezz;
         # Sij     = [Srr, Srtheta, Srz;   Srtheta, Srr, Srz;   Srz, Srz, Szz];
 
         #  4 (<-3)
-        alpha = 2 * Srz * Srz - Szz * Srtheta - Srr * Szz;
+        #alpha = 2 * Srz * Srz - Szz * Srtheta - Srr * Szz;
+        alpha = 2 *Srz*Srz*Szz/Srr - Srr*Srtheta - Srr*Srr
+        beta = 2*Srz*Srz*(Szz/Srr*Szz/Srr) - Szz*Srtheta - Srr*Szz
+        gamma = 2*Srz*Srz-Szz*Srtheta-Srr*Szz
         C13 = Srz / (alpha);
-        C33 = -(Srr + Srtheta) / (alpha);
+        C33 = -(Srr + Srtheta) / (beta);
         # Note- Ehat is a function of Sij although wasn't stated in Spector's notes
-        Ehat = -2 * (Srr * Szz - Srz * Srz) / (alpha);
+        Ehat = -2 * (Srr * Szz - Srz * Srz) / (gamma);
 
         #  5 (<-4)
-        g = -(2 * Srz + Szz) * (Srr - Srtheta) / (alpha);
+        g1 = -(2 * Srz + Szz) * (Srr - Srtheta) / (gamma);
 
         #  6 (<-5)
         # Note- below could be simplified bc both divided and multiplied by 2
-        f1 = Ehat * (2 * Srz + Szz) / 2;
+        f1 = -Ehat * (2*Srz + Szz) / (2*gamma);
         #  6_2 (<-6)
         # Viscoelastic parameters: c, tau 1, tau 2
         f2 = 1 + c * ln((1 + s * tau2) / (1 + s * tau1));
@@ -1207,6 +1210,7 @@ class ViscoporoelasticModel3(LaplaceModel):
 
         with np.errstate(invalid="ignore"):
             I1rtf_f = I1rtf / sqrt(f)
+            I0rtf = I0(sqrt(f))
             """
             sigbar = \
                 2 * epszz * ( \
@@ -1224,18 +1228,12 @@ class ViscoporoelasticModel3(LaplaceModel):
             """
             sigbar = \
                 2 * epszz * ( \
-                            C13 \
-                            * ( \
-                                        g \
-                                        * I1rtf_f \
-                                        / (Ehat * I0(sqrt(f)) - 2 * I1rtf_f) \
-                                        - 1 / 2 \
-                                ) \
-                            + C33 / 2 \
-                            + f1 \
-                            * f2 * \
-                            (I0(sqrt(f)) - 2 * I1rtf_f) \
-                            / (2 * (Ehat * I0(sqrt(f)) - I1rtf_f)) \
+                            C13 * g1 * I1rtf_f \
+                            / (Ehat * I0rtf - 2 * I1rtf_f) \
+                            + (C33-C13) / 2 \
+                            + f1 * f2 * \
+                            (I0rtf - I1rtf_f) \
+                            / (2*Ehat*I0rtf - 4*I1rtf_f) \
                     );
 
         return sigbar

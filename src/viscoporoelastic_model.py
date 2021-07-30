@@ -41,11 +41,11 @@ class LaplaceModel(abc.ABC):  # inheriting from abc.ABC means that this is abstr
     @abc.abstractmethod
     def get_predefined_constant_names() -> tuple: raise NotImplementedError()
 
-    def get_parameters(self) -> tuple:
+    def get_fittable_parameters(self) -> tuple:
         return ()  # zero-length tuple, aka tuple()
 
     @staticmethod
-    def get_parameter_names() -> tuple:
+    def get_fittable_parameter_names() -> tuple:
         return ()  # zero-length tuple, aka tuple()
 
     def get_calculable_constants(self) -> tuple:
@@ -65,19 +65,19 @@ class LaplaceModel(abc.ABC):  # inheriting from abc.ABC means that this is abstr
         tm = self
 
         #dict(zip(type(tm).get_predefined_constant_names(), tm.get_predefined_constants()))
-        #dict(zip(type(tm).get_parameter_names(), tm.get_parameters()))
+        #dict(zip(type(tm).get_fittable_parameter_names(), tm.get_fittable_parameters()))
         #dict(zip(type(tm).get_calculable_constant_names(), tm.get_calculable_constants()))
         """return dict(zip(
-            type(tm).get_predefined_constant_names() + type(tm).get_parameter_names() + type(
+            type(tm).get_predefined_constant_names() + type(tm).get_fittable_parameter_names() + type(
                 tm).get_calculable_constant_names(),
-            tm.get_predefined_constants() + tm.get_parameters() + tm.get_calculable_constants()
+            tm.get_predefined_constants() + tm.get_fittable_parameters() + tm.get_calculable_constants()
         ))"""
 
         return dict(zip(
             sum(
                 [
                     tm.get_predefined_constant_names(),
-                    tm.get_parameter_names(),
+                    tm.get_fittable_parameter_names(),
                     tm.get_calculable_constant_names(),
                 ],
                 tuple()  # "start" has to be an empty tuple (default is int 0, which throws an error when with tuples)
@@ -85,7 +85,7 @@ class LaplaceModel(abc.ABC):  # inheriting from abc.ABC means that this is abstr
             sum(
                 [
                     tm.get_predefined_constants(),
-                    tm.get_parameters(),
+                    tm.get_fittable_parameters(),
                     tm.get_calculable_constants(),
                 ],
                 tuple()  # "start" has to be an empty tuple (default is int 0, which throws an error when with tuples)
@@ -105,16 +105,15 @@ class AnalyticallyInvertableModel(LaplaceModel, abc.ABC):    # inheriting from a
 
 class FittableLaplaceModel(LaplaceModel, abc.ABC):    # inheriting from abc.ABC means that this is abstract base class
     # This is not a static method as fitted parameters depend on the instance (note- the names are still same though)
-    def get_fitted_parameters(self) -> tuple: raise NotImplementedError
+    def get_fittable_parameters(self) -> tuple: raise NotImplementedError
 
     @staticmethod
-    def get_fitted_parameter_names() -> tuple: raise NotImplementedError
+    def get_fittable_parameter_names() -> tuple: raise NotImplementedError
 
-    def get_parameters(self): return self.get_fitted_parameters()
+    def get_parameters(self): return self.get_fittable_parameters()
 
     @classmethod
-    def get_parameter_names(cls): return cls.get_fitted_parameter_names()
-
+    def get_parameter_names(cls): return cls.get_fittable_parameter_names()
 
 
 class TestModel1(LaplaceModel):
@@ -143,7 +142,7 @@ class TestModel1(LaplaceModel):
         return F
 
 
-class TestModel2(AnalyticallyInvertableModel):
+class TestModel2(AnalyticallyInvertableModel, FittableLaplaceModel):
     """
     vs = 0
     tg = 7e3  # sec
@@ -177,15 +176,15 @@ class TestModel2(AnalyticallyInvertableModel):
     def get_predefined_constant_names():
         return ()   # zero-length tuple
 
-    def get_parameters(self):
+    def get_fittable_parameters(self):
         return self.vs, self.tg, self.Es, self.eps0, self.a
 
     @classmethod
-    def get_parameter_names(cls):
+    def get_fittable_parameter_names(cls):
         return "vs", "tg", "Es", "eps0", "a"
 
     def get_calculable_constants(self):
-        vs, tg, Es, eps0, a = self.get_parameters()  #type(self).get_predefined_constants()
+        vs, tg, Es, eps0, a = self.get_fittable_parameters()  #type(self).get_predefined_constants()
         alpha = (1-2*vs)/(2*(1+vs))
         return alpha,  # 1-length tuple
 
@@ -194,11 +193,11 @@ class TestModel2(AnalyticallyInvertableModel):
         return "alpha",  # 1-length tuple
 
     def characteristic_eqn(self, x):
-        vs, tg, Es, eps0, a = self.get_parameters()
+        vs, tg, Es, eps0, a = self.get_fittable_parameters()
         return J1(x) - (1 - vs) / (1 - 2 * vs) * x * J0(x)
 
     def setup_constants(self, bessel_len=20):
-        vs, tg, Es, eps0, a = self.get_parameters()
+        vs, tg, Es, eps0, a = self.get_fittable_parameters()
         alpha2_vals = np.zeros(shape=bessel_len)
         for n in range(bessel_len):
             # Use (n+1)*pi instead of n*pi bc python is zero-indexed unlike Matlab
@@ -214,7 +213,7 @@ class TestModel2(AnalyticallyInvertableModel):
         self.saved_bessel_len = bessel_len
 
     def laplace_value(self, s):
-        vs, tg, Es, eps0, a = self.get_parameters()  #type(self).get_predefined_constants()
+        vs, tg, Es, eps0, a = self.get_fittable_parameters()  #type(self).get_predefined_constants()
         alpha, = self.get_calculable_constants()
 
         eps = -eps0/s
@@ -222,7 +221,7 @@ class TestModel2(AnalyticallyInvertableModel):
         return F
 
     def inverted_value(self, t, bessel_len=20):
-        vs, tg, Es, eps0, a = self.get_parameters()
+        vs, tg, Es, eps0, a = self.get_fittable_parameters()
 
         if bessel_len > self.saved_bessel_len:
             self.setup_constants(bessel_len=bessel_len)
@@ -258,7 +257,7 @@ class TestModel3(TestModel2):
         :param s:
         :return:
         """
-        vs, tg, Es, eps0, a = self.get_parameters()  #TestModel3.get_predefined_constants()
+        vs, tg, Es, eps0, a = self.get_fittable_parameters()  #TestModel3.get_predefined_constants()
         alpha, = self.get_calculable_constants()
 
         eps = -eps0/s
@@ -270,7 +269,7 @@ class TestModel3(TestModel2):
         Overrides super function
         :return:
         """
-        vs, tg, Es, eps0, a = self.get_parameters() #type(self).get_predefined_constants()
+        vs, tg, Es, eps0, a = self.get_fittable_parameters() #type(self).get_predefined_constants()
 
         if bessel_len > self.saved_bessel_len:
             self.setup_constants(bessel_len=bessel_len)
@@ -288,7 +287,7 @@ class TestModel3(TestModel2):
         return "unitless"  # displacement/a is m/m = unitless
 
 
-class TestModel4(LaplaceModel):   # Dr. Spector sent this to me May 29, 2021
+class TestModel4(FittableLaplaceModel):   # Dr. Spector sent this to me May 29, 2021
     """
     v = 0
     strain_rate = 0.0003  #1e-3  # s^-1
@@ -311,15 +310,15 @@ class TestModel4(LaplaceModel):   # Dr. Spector sent this to me May 29, 2021
     def get_predefined_constant_names():
         return ()   # zero-length tuple
 
-    def get_parameters(self):
+    def get_fittable_parameters(self):
         return self.v, self.strain_rate, self.t0_tg, self.tg
 
     @classmethod
-    def get_parameter_names(cls):
+    def get_fittable_parameter_names(cls):
         return "v", "strain_rate", "t0/tg", "tg"
 
     def get_calculable_constants(self):
-        v, strain_rate, t0_tg, tg = self.get_parameters()
+        v, strain_rate, t0_tg, tg = self.get_fittable_parameters()
         t0 = t0_tg * tg
         eps0 = strain_rate * t0
         C0 = (1-2*v)/(1-v)
@@ -335,7 +334,7 @@ class TestModel4(LaplaceModel):   # Dr. Spector sent this to me May 29, 2021
         :param s:
         :return:
         """
-        v, strain_rate, t0_tg, tg = self.get_parameters()
+        v, strain_rate, t0_tg, tg = self.get_fittable_parameters()
         t0, eps0, C0 = self.get_calculable_constants()
 
         # TODO: Confirm the TestModel4 epszz expression from Dr. Spector as this seems to be different from the one
@@ -376,11 +375,11 @@ class ViscoporoelasticModel0(FittableLaplaceModel):
         return "eps0", "strain_rate", "Vrz", "Ezz"
 
     # This is not a static method as fitted parameters depend on the instance (note- the names are still same though)
-    def get_fitted_parameters(self):
+    def get_fittable_parameters(self):
         return self.c, self.tau1, self.tau2, self.tg, self.Vrtheta, self.Err;
 
     @staticmethod
-    def get_fitted_parameter_names():
+    def get_fittable_parameter_names():
         return "c", "tau1", "tau2", "time_const", "Vrtheta", "Err"
 
     def get_calculable_constants(self) -> tuple:
@@ -394,7 +393,7 @@ class ViscoporoelasticModel0(FittableLaplaceModel):
     @classmethod
     def get_var_categories(cls):
         return ("Constant",)    * len(cls.get_predefined_constant_names()) + \
-               ("FittedParam",) * len(cls.get_fitted_parameter_names())
+               ("FittedParam",) * len(cls.get_fittable_parameter_names())
 
     def set_fitted_parameters(self,
                           ## Fitted parameters (to be determined by experimental fitting to
@@ -418,7 +417,7 @@ class ViscoporoelasticModel0(FittableLaplaceModel):
             self.Vrtheta = Vrtheta
         if Err is not None:
             self.Err = Err
-        return self.get_fitted_parameters()
+        return self.get_fittable_parameters()
 
     def laplace_value(self,
                       s,
@@ -538,15 +537,15 @@ class ArmstrongIsotropicModel(FittableLaplaceModel):   # Dr. Spector sent this t
     def get_predefined_constant_names():
         return ()   # zero-length tuple
 
-    def get_parameters(self):
+    def get_fittable_parameters(self):
         return self.v, self.strain_rate, self.t0_tg, self.tg
 
     @classmethod
-    def get_parameter_names(cls):
+    def get_fittable_parameter_names(cls):
         return "v", "strain_rate", "t0/tg", "tg"
 
     def get_calculable_constants(self):
-        v, strain_rate, t0_tg, tg = self.get_parameters()
+        v, strain_rate, t0_tg, tg = self.get_fittable_parameters()
         t0 = t0_tg * tg
         eps0 = strain_rate * t0
         C0 = (1-2*v)/(1-v)
@@ -562,7 +561,7 @@ class ArmstrongIsotropicModel(FittableLaplaceModel):   # Dr. Spector sent this t
         :param s:
         :return:
         """
-        v, strain_rate, t0_tg, tg = self.get_parameters()
+        v, strain_rate, t0_tg, tg = self.get_fittable_parameters()
         t0, eps0, C0 = self.get_calculable_constants()
 
         # TODO: Confirm the TestModel4 epszz expression from Dr. Spector as this seems to be different from the one
@@ -607,17 +606,17 @@ class ViscoporoelasticModel1(LaplaceModel):
         return "t0/tg", "strain_rate", "Vrz", "Ezz"
 
     # This is not a static method as fitted parameters depend on the instance (note- the names are still same though)
-    def get_fitted_parameters(self):
+    def get_fittable_parameters(self):
         return self.c, self.tau1, self.tau2, self.tg, self.Vrtheta, self.Err;
 
     @staticmethod
-    def get_fitted_parameter_names():
+    def get_fittable_parameter_names():
         return "c", "tau1", "tau2", "tg", "Vrtheta", "Err"
 
     @classmethod
     def get_var_categories(cls):
         return ("Constant",)    * len(cls.get_predefined_constant_names()) + \
-               ("FittedParam",) * len(cls.get_fitted_parameter_names())
+               ("FittedParam",) * len(cls.get_fittable_parameter_names())
 
     def set_fitted_parameters(self,
                           ## Fitted parameters (to be determined by experimental fitting to
@@ -641,7 +640,7 @@ class ViscoporoelasticModel1(LaplaceModel):
             self.Vrtheta = Vrtheta
         if Err is not None:
             self.Err = Err
-        return self.get_fitted_parameters()
+        return self.get_fittable_parameters()
 
     def laplace_value(self,
                       s,
@@ -788,11 +787,11 @@ class ViscoporoelasticModel2(FittableLaplaceModel):
         return tuple()
 
     # This is not a static method as fitted parameters depend on the instance (note- the names are still same though)
-    def get_fitted_parameters(self):
+    def get_fittable_parameters(self):
         return self.c, self.tau1, self.tau2, self.tg, self.v, self.t0_tg;
 
     @staticmethod
-    def get_fitted_parameter_names():
+    def get_fittable_parameter_names():
         return "c", "tau1", "tau2", "tg", "v", "t0/tg"
 
     def get_calculable_constants(self) -> tuple:
@@ -806,7 +805,7 @@ class ViscoporoelasticModel2(FittableLaplaceModel):
     @classmethod
     def get_var_categories(cls):
         return ("Constant",)    * len(cls.get_predefined_constant_names()) + \
-               ("FittedParam",) * len(cls.get_fitted_parameter_names())
+               ("FittedParam",) * len(cls.get_fittable_parameter_names())
 
     def set_fitted_parameters(self,
                           ## Fitted parameters (to be determined by experimental fitting to
@@ -830,7 +829,7 @@ class ViscoporoelasticModel2(FittableLaplaceModel):
             self.v = v
         if t0_tg is not None:
             self.t0_tg = t0_tg
-        return self.get_fitted_parameters()
+        return self.get_fittable_parameters()
 
     def laplace_value(self,
                       s,
@@ -901,11 +900,11 @@ class ViscoporoelasticModel1(FittableLaplaceModel):
         return "t0/tg", "strain_rate", "Vrz", "Ezz"
 
     # This is not a static method as fitted parameters depend on the instance (note- the names are still same though)
-    def get_fitted_parameters(self):
+    def get_fittable_parameters(self):
         return self.c, self.tau1, self.tau2, self.tg, self.Vrtheta, self.Err;
 
     @staticmethod
-    def get_fitted_parameter_names():
+    def get_fittable_parameter_names():
         return "c", "tau1", "tau2", "tg", "Vrtheta", "Err"
 
     def get_calculable_constants(self) -> tuple:
@@ -919,7 +918,7 @@ class ViscoporoelasticModel1(FittableLaplaceModel):
     @classmethod
     def get_var_categories(cls):
         return ("Constant",)    * len(cls.get_predefined_constant_names()) + \
-               ("FittedParam",) * len(cls.get_fitted_parameter_names())
+               ("FittedParam",) * len(cls.get_fittable_parameter_names())
 
     def set_fitted_parameters(self,
                           ## Fitted parameters (to be determined by experimental fitting to
@@ -943,7 +942,7 @@ class ViscoporoelasticModel1(FittableLaplaceModel):
             self.Vrtheta = Vrtheta
         if Err is not None:
             self.Err = Err
-        return self.get_fitted_parameters()
+        return self.get_fittable_parameters()
 
     def laplace_value(self,
                       s,
@@ -1099,11 +1098,11 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
         return "t0/tg", "strain_rate", "Vrz", "Ezz"
 
     # This is not a static method as fitted parameters depend on the instance (note- the names are still same though)
-    def get_fitted_parameters(self):
+    def get_fittable_parameters(self):
         return self.c, self.tau1, self.tau2, self.tg, self.Vrtheta, self.Err;
 
     @staticmethod
-    def get_fitted_parameter_names():
+    def get_fittable_parameter_names():
         return "c", "tau1", "tau2", "tg", "Vrtheta", "Err"
 
     def get_calculable_constants(self) -> tuple:
@@ -1117,7 +1116,7 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
     @classmethod
     def get_var_categories(cls):
         return ("Constant",)    * len(cls.get_predefined_constant_names()) + \
-               ("FittedParam",) * len(cls.get_fitted_parameter_names())
+               ("FittedParam",) * len(cls.get_fittable_parameter_names())
 
     def set_fitted_parameters(self,
                           ## Fitted parameters (to be determined by experimental fitting to
@@ -1141,7 +1140,7 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
             self.Vrtheta = Vrtheta
         if Err is not None:
             self.Err = Err
-        return self.get_fitted_parameters()
+        return self.get_fittable_parameters()
 
     def laplace_value(self,
                       s,

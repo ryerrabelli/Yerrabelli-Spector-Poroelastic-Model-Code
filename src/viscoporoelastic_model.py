@@ -1062,36 +1062,45 @@ class ViscoporoelasticModel1(LaplaceModel):
 
 
 class ViscoporoelasticModel3(LaplaceModel):
+    ## PARAMETERS
+    ## Predefined constants
+    t0_tg = 0.1;
+    strain_rate = 0.1;  # 1 percent per s (normally 1#/s)
+    ## Below are directly determined by the mesh deformation part of the
+    ## experiment (see our paper with Daniel).  -Dr. Spector
+    Vrz = 0.5;  # Not actually v, but greek nu (represents Poisson's ratio)
+    Ezz = 10;  # Note- don't mix up Ezz with epszz
 
-    def __init__(self, c=2, tau1=0.001, tau2=10, tg=40.62, v=0.3, t0_tg=10):
+    def __init__(self, c=1, tau1=1, tau2=1, tg=40.62, Vrtheta=1, Err=1):
         """
-        self.c = 2;
-        self.tau1 = 0.001;
-        self.tau2 = 10;
+        self.c = 1;
+        self.tau1 = 1;
+        self.tau2 = 1;
         # tau = [tau1, tau2];
         # tau = [1 1];
         self.tg = 40.62;  # in units of s   # for porosity_sp == 0.5
-        self.v = 0.3
-        self.t0_tg = 10
+        self.Vrtheta = 1;  # Not actually v, but greek nu (represents Poisson's ratio)
+        self.Err = 1;
         """
         # Source: https://stackoverflow.com/questions/12191075/is-there-a-shortcut-for-self-somevariable-somevariable-in-a-python-class-con/12191118
         vars(self).update((k, v) for k, v in vars().items() if k != "self")
 
     @classmethod
     def get_predefined_constants(cls):
-        return tuple()
+        return cls.t0_tg, cls.strain_rate, cls.Vrz, cls.Ezz
+        #return type(self).eps0, type(self).strain_rate, type(self).Vrz, type(self).Ezz
 
     @staticmethod
     def get_predefined_constant_names():
-        return tuple()
+        return "t0/tg", "strain_rate", "Vrz", "Ezz"
 
     # This is not a static method as fitted parameters depend on the instance (note- the names are still same though)
     def get_fitted_parameters(self):
-        return self.c, self.tau1, self.tau2, self.tg, self.v, self.t0_tg;
+        return self.c, self.tau1, self.tau2, self.tg, self.Vrtheta, self.Err;
 
     @staticmethod
     def get_fitted_parameter_names():
-        return "c", "tau1", "tau2", "tg", "v", "t0/tg"
+        return "c", "tau1", "tau2", "tg", "Vrtheta", "Err"
 
     def get_parameters(self): return self.get_fitted_parameters()
 
@@ -1110,8 +1119,8 @@ class ViscoporoelasticModel3(LaplaceModel):
                           tau1=None,
                           tau2=None,  # tau = [tau1, tau2];
                           tg=None,  # in units of s   # for porosity_sp == 0.5
-                          v=None,  # Not actually v, but greek nu (represents Poisson's ratio)
-                          t0_tg=None,
+                          Vrtheta=None,  # Not actually v, but greek nu (represents Poisson's ratio)
+                          Err=None,
                           ):
         if c is not None:
             self.c = c
@@ -1121,10 +1130,10 @@ class ViscoporoelasticModel3(LaplaceModel):
             self.tau2 = tau2
         if tg is not None:
             self.tg = tg
-        if v is not None:
-            self.v = v
-        if t0_tg is not None:
-            self.t0_tg = t0_tg
+        if Vrtheta is not None:
+            self.Vrtheta = Vrtheta
+        if Err is not None:
+            self.Err = Err
         return self.get_fitted_parameters()
 
     def laplace_value(self,

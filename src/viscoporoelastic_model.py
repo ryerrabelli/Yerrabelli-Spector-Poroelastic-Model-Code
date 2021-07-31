@@ -97,7 +97,7 @@ class LaplaceModel(abc.ABC):  # inheriting from abc.ABC means that this is abstr
             ],
             tuple()  # "start" explicitly defined as empty tuple (default is int 0, which throws an error
             # when added with  tuples)
-        ),
+        )
 
     def get_var_values(self,
                        include_predefined_constants=True,
@@ -105,15 +105,15 @@ class LaplaceModel(abc.ABC):  # inheriting from abc.ABC means that this is abstr
                        include_calculable_constants=True) -> Values:
         return sum(  # the sum(.) function acts here to concatenate tuples
             [
-                self.get_predefined_constant_names() if include_predefined_constants else tuple(),  # 0-length tuple
-                self.get_fittable_parameter_names() if include_fittable_parameters else tuple(),
-                self.get_calculable_constant_names() if include_calculable_constants else tuple(),
+                self.get_predefined_constants() if include_predefined_constants else tuple(),  # 0-length tuple
+                self.get_fittable_parameters() if include_fittable_parameters else tuple(),
+                self.get_calculable_constants() if include_calculable_constants else tuple(),
             ],
             tuple()  # "start" explicitly defined as empty tuple (default is int 0, which throws an error
             # when added with  tuples)
-        ),
+        )
 
-    def get_var_names_and_vals(self, **kwargs) -> Dict[Name, Value]:  # Formerly called get_all_names_and_vars(.)
+    def get_var_dict(self, **kwargs) -> Dict[Name, Value]:  # Formerly called get_all_names_and_vars(.)
         #dict(zip(type(self).get_predefined_constant_names(), self.get_predefined_constants()))
         #dict(zip(type(self).get_fittable_parameter_names(), self.get_fittable_parameters()))
         #dict(zip(type(self).get_calculable_constant_names(), self.get_calculable_constants()))
@@ -528,7 +528,8 @@ class ViscoporoelasticModel0(FittableLaplaceModel):
         return sigbar
 
 
-class ArmstrongIsotropicModel(FittableLaplaceModel):   # Dr. Spector sent this to me May 29, 2021, then revised it on Jun 11, 2021
+class ArmstrongIsotropicModel(FittableLaplaceModel):   # Aka TestModel5
+    # Dr. Spector sent this model to me May 29, 2021, then revised it on Jun 11, 2021
     """
     v = 0
     strain_rate = 0.0003  #1e-3  # s^-1

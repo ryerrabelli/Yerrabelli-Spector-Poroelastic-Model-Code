@@ -35,12 +35,16 @@ Err = 1;
 class LaplaceModel(abc.ABC):  # inheriting from abc.ABC means that this is abstract base class
     @classmethod
     @abc.abstractmethod
-    def get_predefined_constants(cls) -> tuple: raise NotImplementedError()
+    def get_predefined_constants(cls) -> tuple:
+        return ()  # zero-length tuple, aka tuple()
 
     @staticmethod
     @abc.abstractmethod
-    def get_predefined_constant_names() -> tuple: raise NotImplementedError()
+    # This is a static method as predefined_constants is independent of the specific instance
+    def get_predefined_constant_names() -> tuple:
+        return ()  # zero-length tuple, aka tuple()
 
+    # Not a static method as fitted parameters depend on the instance (note- the names are still same though)
     def get_fittable_parameters(self) -> tuple:
         return ()  # zero-length tuple, aka tuple()
 
@@ -48,6 +52,7 @@ class LaplaceModel(abc.ABC):  # inheriting from abc.ABC means that this is abstr
     def get_fittable_parameter_names() -> tuple:
         return ()  # zero-length tuple, aka tuple()
 
+    # Not a static method as calculable constants depend on the instance (note- the names are still same though)
     def get_calculable_constants(self) -> tuple:
         return ()  # zero-length tuple, aka tuple()
 
@@ -56,41 +61,55 @@ class LaplaceModel(abc.ABC):  # inheriting from abc.ABC means that this is abstr
         return ()  # zero-length tuple, aka tuple()
 
     @abc.abstractmethod
-    def laplace_value(self, s): return NotImplemented
+    def laplace_value(self, s):
+        raise NotImplementedError()
 
     @classmethod
-    def inverted_value_units(cls): return NotImplemented #return "N/A"
+    def inverted_value_units(cls):
+        return NotImplemented  # `return NotImplemented` doesn't throw an error unlike `raise NotImplementedError()`
 
-    def get_all_names_and_vars(self) -> dict:
-        tm = self
+    def get_var_names_and_vals(self,
+                               include_predefined_constants=True,
+                               include_fittable_parameters=True,
+                               include_calculable_constants=True) -> dict:  # Formerly called get_all_names_and_vars(.)
 
-        #dict(zip(type(tm).get_predefined_constant_names(), tm.get_predefined_constants()))
-        #dict(zip(type(tm).get_fittable_parameter_names(), tm.get_fittable_parameters()))
-        #dict(zip(type(tm).get_calculable_constant_names(), tm.get_calculable_constants()))
+        #dict(zip(type(self).get_predefined_constant_names(), self.get_predefined_constants()))
+        #dict(zip(type(self).get_fittable_parameter_names(), self.get_fittable_parameters()))
+        #dict(zip(type(self).get_calculable_constant_names(), self.get_calculable_constants()))
         """return dict(zip(
-            type(tm).get_predefined_constant_names() + type(tm).get_fittable_parameter_names() + type(
-                tm).get_calculable_constant_names(),
-            tm.get_predefined_constants() + tm.get_fittable_parameters() + tm.get_calculable_constants()
+            type(self).get_predefined_constant_names() + type(self).get_fittable_parameter_names() + type(
+                self).get_calculable_constant_names(),
+            self.get_predefined_constants() + self.get_fittable_parameters() + self.get_calculable_constants()
         ))"""
-
+        
         return dict(zip(
-            sum(
+            sum(  # the sum(.) function acts here to concatenate tuples
                 [
-                    tm.get_predefined_constant_names(),
-                    tm.get_fittable_parameter_names(),
-                    tm.get_calculable_constant_names(),
+                    self.get_predefined_constant_names() if include_predefined_constants else tuple(), # 0-length tuple
+                    self.get_fittable_parameter_names() if include_fittable_parameters else tuple(),
+                    self.get_calculable_constant_names() if include_calculable_constants else tuple(),
                 ],
-                tuple()  # "start" has to be an empty tuple (default is int 0, which throws an error when with tuples)
+                start=tuple()  # "start" explicitly defined as empty tuple (default is int 0, which throws an error
+                # when added with  tuples)
             ),
-            sum(
+            sum(  # the sum(.) function acts here to concatenate tuples
                 [
-                    tm.get_predefined_constants(),
-                    tm.get_fittable_parameters(),
-                    tm.get_calculable_constants(),
+                    self.get_predefined_constants() if include_predefined_constants else tuple(),  # 0-length tuple
+                    self.get_fittable_parameters() if include_fittable_parameters else tuple(),
+                    self.get_calculable_constants() if include_calculable_constants else tuple(),
                 ],
-                tuple()  # "start" has to be an empty tuple (default is int 0, which throws an error when with tuples)
+                start=tuple()  # "start" explicitly defined as empty tuple (default is int 0, which throws an error
+                # when added with  tuples)
             ),
         ))
+
+    @classmethod
+    def get_var_categories(cls) -> tuple:
+        # Multiple operator acts to perform concatenation here
+        # Using tuples of strings (alternatively, could use lists instead)
+        return ("Constant",)    * len(cls.get_predefined_constant_names()) + \
+               ("FittedParam",) * len(cls.get_fittable_parameter_names()) + \
+               ("Calculated",) * len(cls.get_calculable_constant_names())
 
     @classmethod
     def get_model_name(cls):
@@ -104,16 +123,8 @@ class AnalyticallyInvertableModel(LaplaceModel, abc.ABC):    # inheriting from a
 
 
 class FittableLaplaceModel(LaplaceModel, abc.ABC):    # inheriting from abc.ABC means that this is abstract base class
-    # This is not a static method as fitted parameters depend on the instance (note- the names are still same though)
-    def get_fittable_parameters(self) -> tuple: raise NotImplementedError
+    pass
 
-    @staticmethod
-    def get_fittable_parameter_names() -> tuple: raise NotImplementedError
-
-    def get_parameters(self): return self.get_fittable_parameters()
-
-    @classmethod
-    def get_parameter_names(cls): return cls.get_fittable_parameter_names()
 
 
 class TestModel1(LaplaceModel):
@@ -390,11 +401,6 @@ class ViscoporoelasticModel0(FittableLaplaceModel):
     def get_calculable_constant_names() -> tuple:
         return ("t0",)  # returns tuple of length 1
 
-    @classmethod
-    def get_var_categories(cls):
-        return ("Constant",)    * len(cls.get_predefined_constant_names()) + \
-               ("FittedParam",) * len(cls.get_fittable_parameter_names())
-
     def set_fitted_parameters(self,
                           ## Fitted parameters (to be determined by experimental fitting to
                           # the unknown material)
@@ -621,11 +627,6 @@ class ViscoporoelasticModel1(FittableLaplaceModel):
     def get_calculable_constant_names() -> tuple:
         return ("t0",)  # returns tuple of length 1
 
-    @classmethod
-    def get_var_categories(cls):
-        return ("Constant",)    * len(cls.get_predefined_constant_names()) + \
-               ("FittedParam",) * len(cls.get_fittable_parameter_names())
-
     def set_fitted_parameters(self,
                           ## Fitted parameters (to be determined by experimental fitting to
                           # the unknown material)
@@ -810,11 +811,6 @@ class ViscoporoelasticModel2(FittableLaplaceModel):
     def get_calculable_constant_names() -> tuple:
         return ("t0",)  # returns tuple of length 1
 
-    @classmethod
-    def get_var_categories(cls):
-        return ("Constant",)    * len(cls.get_predefined_constant_names()) + \
-               ("FittedParam",) * len(cls.get_fittable_parameter_names())
-
     def set_fitted_parameters(self,
                           ## Fitted parameters (to be determined by experimental fitting to
                           # the unknown material)
@@ -923,11 +919,6 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
     @staticmethod
     def get_calculable_constant_names() -> tuple:
         return ("t0",)  # returns tuple of length 1
-
-    @classmethod
-    def get_var_categories(cls):
-        return ("Constant",)    * len(cls.get_predefined_constant_names()) + \
-               ("FittedParam",) * len(cls.get_fittable_parameter_names())
 
     def set_fitted_parameters(self,
                           ## Fitted parameters (to be determined by experimental fitting to
@@ -1066,7 +1057,7 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
 
 
 if __name__ == '__main__':
-    s = 0.001
+    s_val = 0.001
     vpe = ViscoporoelasticModel1()
-    output = s * vpe.laplace_value(s)
+    output = s_val * vpe.laplace_value(s_val)
     print(output)

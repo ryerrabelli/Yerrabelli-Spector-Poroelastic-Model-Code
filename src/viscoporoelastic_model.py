@@ -1004,7 +1004,7 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
         C13 = Srz / (alpha);
         C33 = -(Srr + Srtheta) / (beta);
         # Note- Ehat is a function of Sij although wasn't stated in Spector's notes
-        Ehat = -2 * (Srr * Szz - Srz * Srz) / (gamma);
+        Ehat = -2 * (Srr * Szz - Srz*Srz) / (gamma);
 
         #  5 (<-4)
         g1 = -(2 * Srz + Szz) * (Srr - Srtheta) / (gamma);

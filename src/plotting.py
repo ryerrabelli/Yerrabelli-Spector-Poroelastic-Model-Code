@@ -8,8 +8,15 @@ import copy
 import warnings
 import itertools
 
-#from src.euler_inversion import euler_inversion
-from euler_inversion import euler_inversion
+#from src.inverting import inverting.euler_inversion
+#from inverting import euler_inversion
+import inverting
+import utils
+
+def reload_imports():
+    import importlib
+    importlib.reload(inverting)
+    importlib.reload(utils)
 
 
 def overlap(a, b, ):
@@ -191,7 +198,7 @@ def plot_laplace_analysis(funcs,  # func (funcs) can either be a function or an 
     laplace_vals_all = [func(input_s) for func in funcs]
     t1 = timer.time();
     print(f"It took {t1-t0:0.4f} sec to evaluate the Laplace space func for {len(input_s)} input s vals.")
-    inverted_vals_numerical_all = np.array([euler_inversion(func, input_times / time_const, Marg=Marg) for func in funcs ])
+    inverted_vals_numerical_all = np.array([inverting.euler_inversion(func, input_times / time_const, Marg=Marg) for func in funcs ])
     t2 = timer.time()
     print(f"It took {t2-t1:0.4f} sec to numerically invert Laplace the func for {len(input_times)} input times.")
 

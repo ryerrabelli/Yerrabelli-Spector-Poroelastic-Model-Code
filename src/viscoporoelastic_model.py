@@ -876,8 +876,7 @@ class ViscoporoelasticModel2(FittableLaplaceModel):
         #T_bar = tg/t0 * coth(sqrt(f))/(s*sqrt(f))*(1-exp(-t0_tg*s))
         T_bar = (1 - exp(-t0_tg * s)) / (t0_tg * s * sqrt(f) * np.tanh(sqrt(f)))
 
-        return T_bar
-
+        return T_bar        
 
 
 class ViscoporoelasticModel3(FittableLaplaceModel):
@@ -963,6 +962,7 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
                       tg=None,  # in units of s   # for porosity_sp == 0.5
                       Vrtheta=None,  # Not actually v, but greek nu (represents Poisson's ratio)
                       Err=None,
+                      return_error_inds=False,
                       ):
 
         """
@@ -1030,10 +1030,16 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
         # a complex128 inf throws a warning when dividing by another value, whereas a regular complex doesn't
         is_complex128 = [type(I1rtf_val) == np.complex128 for I1rtf_val in I1rtf[is_inf]]
         if np.any(is_inf):
-            print(f"Warning the function could not be inverted at some values of t as the I1(sqrt(f)) component "
-                  f"led to +/- infinity. The indices of these time points are {np.nonzero(is_inf)}.")
             # I1rtf[np.isinf(I1rtf)] = np.nan
-
+            if return_error_inds:
+                error_inds = is_inf
+            else:
+                (indices_is_inf, ) = np.nonzero(is_inf)
+                print(f"Warning the function could not be inverted at some ({len(indices_is_inf)}/{len(is_inf)}) values of t as the I1(sqrt(f)) component "
+                      f"led to +/- infinity. The indices of these time points are {utils.abbreviate(indices_is_inf)}.")
+        else:
+            error_inds = []
+            
         with np.errstate(invalid="ignore"):
             I1rtf_f = I1rtf / sqrt(f)
             I0rtf = I0(sqrt(f))
@@ -1062,7 +1068,10 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
                             / (2*Ehat*I0rtf - 4*I1rtf_f) \
                     );
 
-        return sigbar
+        if return_error_inds:
+            return (sigbar, error_inds)
+        else:
+            return sigbar
 
 
 if __name__ == '__main__':

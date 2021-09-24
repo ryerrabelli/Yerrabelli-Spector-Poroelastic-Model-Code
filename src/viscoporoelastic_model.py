@@ -1074,6 +1074,47 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
             return sigbar
 
 
+class CohenModel(LaplaceModel):
+    t0_tg = 10 / 40.62;
+    tg = 40.62  # sec
+    strain_rate = 0.01;  # per sec
+    E1 = 8.5 # kPa
+    E3 = 19  # kPa
+    v21 = 0.75  # like Vrtheta
+    v31 = 0.24  # like Vrz
+
+    @classmethod
+    def get_predefined_constants(cls):
+        return cls.t0_tg, cls.tg, cls.strain_rate, cls.E1, cls.E3, cls.v21, cls.v31
+
+    @staticmethod
+    def get_predefined_constant_names():
+        return "t0_tg", "tg", "strain_rate", "E1", "E3", "v21", "v31"
+
+    def laplace_value(self, s):
+        t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
+
+        delta = 1-v21 - 2*v31*v31*E1/E3
+        C11 = E1*( 1 -v31*v31 * E1/E3) / ((1+v21) * delta)
+        C12 = E1*(v21+v31*v31 * E1/E3) / ((1+v21) * delta)
+        C13 = E1*v31 / delta
+        C33 = E3 * (1+2*v31*v31*E1/E3) / delta
+
+        C0 = (C11-C12)/C11
+        C1 = (2*C33 + C11 + C12 - 4*C13 )/ (C11-C12)
+        C2 = 2 *(C33*(C11-C12) + C11*(C11+C12-4*C13) + 2*C13*C13  ) / (C11-C12)**2
+
+        eps_zz = strain_rate * tg * (1 - exp(-t0_tg * s))/ (s*s)
+
+        #I1rts = I1(sqrt(s))
+        I1rts_s = I1(sqrt(s)) / sqrt(s)
+        I0rts = I0(sqrt(s))
+
+        F = (C1 * I0rts - C2*C0*I1rts_s)/(I0rts-C0*I1rts_s)  * eps_zz
+
+        return F
+
+
 if __name__ == '__main__':
     s_val = 0.001
     vpe = ViscoporoelasticModel1()

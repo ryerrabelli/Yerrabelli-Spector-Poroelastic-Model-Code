@@ -1083,6 +1083,11 @@ class CohenModel(LaplaceModel):
     v21 = 0.75  # like Vrtheta
     v31 = 0.24  # like Vrz
 
+    def __init__(self):
+        self.alpha2_vals = None
+        self.saved_bessel_len = 0
+        super().__init__()
+
     @classmethod
     def get_predefined_constants(cls):
         return cls.t0_tg, cls.tg, cls.strain_rate, cls.E1, cls.E3, cls.v21, cls.v31
@@ -1111,6 +1116,78 @@ class CohenModel(LaplaceModel):
         I0rts = I0(sqrt(s))
 
         F = (C1 * I0rts - C2*C0*I1rts_s)/(I0rts-C0*I1rts_s)  * eps_zz
+
+        return F
+
+    def characteristic_eqn(self, x):
+        t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
+        return J1(x) - (1 - 2*v31*v31*E1/E3) / (1 - v21 - 2*v31*v31*E1/E3) * x * J0(x)
+
+    def setup_constants(self, bessel_len=20):
+        alpha2_vals = np.zeros(shape=bessel_len)
+        for n in range(bessel_len):
+            # Use (n+1)*pi instead of n*pi bc python is zero-indexed unlike Matlab
+            alpha2_vals[n] = scipy.optimize.fsolve(func=self.characteristic_eqn, x0=(n + 1) * np.pi)
+
+        self.alpha2_vals=alpha2_vals
+        self.saved_bessel_len = bessel_len
+
+    def get_calculable_constants(self):
+        t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
+        v31sq = v31 * v31
+
+        delta1 = 1 - v21 - 2*v31sq*E1/E3
+        delta2 = (1 - 2*v31sq*E1/E3)/(1+v21)
+        delta3 = (1 - 2*v31sq)*delta2/delta1
+        return delta1, delta2, delta3
+
+    @staticmethod
+    def get_calculable_constant_names():
+        return "delta1", "delta2", "delta3",
+
+    def inverted_value(self, t, bessel_len=20):
+        """
+        Implemented (and override) the inherited method
+        :param t:
+        :type t:
+        :param bessel_len:
+        :type bessel_len:
+        :return:
+        :rtype:
+        """
+        t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
+
+        delta1, delta2, delta3 = self.get_calculable_constants()
+        """v31sq = v31 * v31
+        delta1 = 1 - v21 - 2*v31sq*E1/E3
+        delta2 = (1 - 2*v31sq*E1/E3)/(1+v21)
+        delta3 = (1-2*v31sq)*delta2/delta1"""
+
+        if bessel_len > self.saved_bessel_len:
+            self.setup_constants(bessel_len=bessel_len)
+        alpha2_vals = self.alpha2_vals
+
+        #denom = alpha2_vals*(delta2*delta2*alpha2_vals - delta1/(1+v21))
+        #F = np.zeros(shape=np.array(t).shape )
+        #F = E3*strain_rate*t + \
+        #    E1*strain_rate*tg * (1/8 + sum(exp(-alpha2_N*t/tg)/denom for alpha2_N in alpha2_vals) )
+        #F = E3*strain_rate*t - \
+        #    E1*strain_rate*tg*delta3 * \
+        #    sum((exp(-alpha2_N*t/tg)-exp(-alpha2_N*(t/tg-t0_tg)))/denom for alpha2_N in alpha2_vals)
+        #print(f"delta1/(1+v21)={delta1/(1+v21)}")
+        #print(f"E1 * strain_rate * tg * delta3={E1 * strain_rate * tg * delta3}")
+        F = np.where(
+            t / tg < t0_tg,
+            E3 * strain_rate * t + \
+            E1 * strain_rate * tg * (1/8 +
+                                     sum(exp(-alpha2_N * t/tg) / (alpha2_N*(delta2*delta2*alpha2_N - delta1/(1+v21)))
+                                         for alpha2_N in alpha2_vals)),
+
+            E3 * strain_rate * t - \
+            E1 * strain_rate * tg * delta3 * \
+            sum((exp(-alpha2_N * t/tg) - exp(-alpha2_N * (t/tg - t0_tg))) / (alpha2_N*(delta2*delta2*alpha2_N - delta1/(1+v21)))
+                for alpha2_N in alpha2_vals)
+            )
 
         return F
 

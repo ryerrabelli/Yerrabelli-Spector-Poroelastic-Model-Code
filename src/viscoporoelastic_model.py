@@ -1157,6 +1157,11 @@ class CohenModel(LaplaceModel):
     def get_calculable_constant_names():
         return "delta1", "delta2", "delta3",
 
+    """
+    @classmethod
+    def inverted_value_units(cls):
+        return "Newtons"  # Newtons"""
+
     def inverted_value(self, t, bessel_len=20):
         """
         Implemented (and override) the inherited method

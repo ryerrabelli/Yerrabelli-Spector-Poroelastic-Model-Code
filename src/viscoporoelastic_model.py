@@ -1075,17 +1075,28 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
 
 
 class CohenModel(LaplaceModel):
+    """
+    Source of equation:
+    Cohen, B., Lai, W. M., and Mow, V. C. (August 1, 1998). "A Transversely Isotropic Biphasic Model for Unconfined
+    Compression of Growth Plate and Chondroepiphysis." ASME. J Biomech Eng. August 1998; 120(4): 491–496.
+    https://doi.org/10.1115/1.2798019
+
+    """
     t0_tg = 10 / 40.62;
     tg = 40.62  # sec
     strain_rate = 0.01;  # per sec
-    E1 = 8.5 # kPa
-    E3 = 19  # kPa
+    E1 = 8.5  # kPa
+    E3 = 19   # kPa
     v21 = 0.75  # like Vrtheta
     v31 = 0.24  # like Vrz
 
-    def __init__(self):
+    def __init__(self, **kwargs):
         self.alpha2_vals = None
         self.saved_bessel_len = 0
+
+        # Source: https://stackoverflow.com/questions/12191075/is-there-a-shortcut-for-self-somevariable-somevariable-in-a-python-class-con/12191118
+        vars(self).update((k, v) for k, v in vars().items() if k != "self")
+        #vars(self).update((k, v) for k, v in kwargs.items() if k != "self")
         super().__init__()
 
     @classmethod
@@ -1121,13 +1132,14 @@ class CohenModel(LaplaceModel):
 
     def characteristic_eqn(self, x):
         t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
-        return J1(x) - (1 - 2*v31*v31*E1/E3) / (1 - v21 - 2*v31*v31*E1/E3) * x * J0(x)
+        return J1(x) - (1 - v31*v31*E1/E3) / (1 - v21 - 2*v31*v31*E1/E3) * x * J0(x)
 
     def setup_constants(self, bessel_len=20):
         alpha2_vals = np.zeros(shape=bessel_len)
         for n in range(bessel_len):
             # Use (n+1)*pi instead of n*pi bc python is zero-indexed unlike Matlab
-            alpha2_vals[n] = scipy.optimize.fsolve(func=self.characteristic_eqn, x0=(n + 1) * np.pi)
+            alpha = scipy.optimize.fsolve(func=self.characteristic_eqn, x0=(n + 1) * np.pi)
+            alpha2_vals[n] = alpha**2
 
         self.alpha2_vals=alpha2_vals
         self.saved_bessel_len = bessel_len
@@ -1137,7 +1149,7 @@ class CohenModel(LaplaceModel):
         v31sq = v31 * v31
 
         delta1 = 1 - v21 - 2*v31sq*E1/E3
-        delta2 = (1 - 2*v31sq*E1/E3)/(1+v21)
+        delta2 = (1 - v31sq*E1/E3)/(1+v21)
         delta3 = (1 - 2*v31sq)*delta2/delta1
         return delta1, delta2, delta3
 
@@ -1167,7 +1179,7 @@ class CohenModel(LaplaceModel):
             self.setup_constants(bessel_len=bessel_len)
         alpha2_vals = self.alpha2_vals
 
-        #denom = alpha2_vals*(delta2*delta2*alpha2_vals - delta1/(1+v21))
+        denom = alpha2_vals*(delta2*delta2*alpha2_vals - delta1/(1+v21))
         #F = np.zeros(shape=np.array(t).shape )
         #F = E3*strain_rate*t + \
         #    E1*strain_rate*tg * (1/8 + sum(exp(-alpha2_N*t/tg)/denom for alpha2_N in alpha2_vals) )
@@ -1179,15 +1191,56 @@ class CohenModel(LaplaceModel):
         F = np.where(
             t / tg < t0_tg,
             E3 * strain_rate * t + \
-            E1 * strain_rate * tg * (1/8 +
-                                     sum(exp(-alpha2_N * t/tg) / (alpha2_N*(delta2*delta2*alpha2_N - delta1/(1+v21)))
-                                         for alpha2_N in alpha2_vals)),
-
-            E3 * strain_rate * t - \
-            E1 * strain_rate * tg * delta3 * \
+            E1 * strain_rate * tg * delta3 *
+            (1/8 - sum(exp(-alpha2_N * t/tg) / (alpha2_N*(delta2*delta2*alpha2_N - delta1/(1+v21)))
+                       for alpha2_N in alpha2_vals
+                       )
+             ),
+            E3 * strain_rate * t0_tg*tg - \
+            E1 * strain_rate * tg * delta3 *
             sum((exp(-alpha2_N * t/tg) - exp(-alpha2_N * (t/tg - t0_tg))) / (alpha2_N*(delta2*delta2*alpha2_N - delta1/(1+v21)))
-                for alpha2_N in alpha2_vals)
+                for alpha2_N in alpha2_vals
+                )
             )
+
+        return F
+
+
+class CohenModel1998(CohenModel):
+    t0_tg = 1;
+    tg = 1  # sec
+    strain_rate = 0.01;  # per sec
+    E1 = 5  # kPa
+    E3 = 1  # kPa
+    v21 = 0.3  # like Vrtheta
+    v31 = 0  # like Vrz
+
+    def inverted_valuex(self, t, bessel_len=20):
+        """
+        Implemented (and override) the inherited method
+        :param t:
+        :type t:
+        :param bessel_len:
+        :type bessel_len:
+        :return:
+        :rtype:
+        """
+        t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
+        t0=t0_tg*tg
+        delta1, delta2, delta3 = self.get_calculable_constants()
+        E1_E3 = E1/E3
+        if bessel_len > self.saved_bessel_len:
+            self.setup_constants(bessel_len=bessel_len)
+        alpha2_vals = self.alpha2_vals
+
+        part1 = np.minimum(t0_tg, 1)
+        summation = []
+        for alpha2 in alpha2_vals:
+            denom = alpha2 * (delta2**2 * alpha2 - delta1/(1+v21) )
+            summation.append( exp(-alpha2*tg*t)/denom )
+        summation =np.sum(summation, axis=0)
+        part2 = E1_E3*delta3*(1/8-summation)
+        F=E3*strain_rate*t0 * (part1+part2)
 
         return F
 

@@ -1107,14 +1107,28 @@ class CohenModel(LaplaceModel):
     def get_predefined_constant_names():
         return "t0_tg", "tg", "strain_rate", "E1", "E3", "v21", "v31"
 
+    def get_calculable_constants(self):
+        t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
+        v31sq = v31 * v31
+
+        delta1 = 1 - v21 - 2*v31sq*E1/E3
+        delta2 = (1 - v31sq*E1/E3)/(1+v21)
+        delta3 = (1 - 2*v31sq)*delta2/delta1
+        return delta1, delta2, delta3
+
+    @staticmethod
+    def get_calculable_constant_names():
+        return "delta1", "delta2", "delta3",
+
     def laplace_value(self, s):
         t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
 
-        delta = 1-v21 - 2*v31*v31*E1/E3
-        C11 = E1*( 1 -v31*v31 * E1/E3) / ((1+v21) * delta)
-        C12 = E1*(v21+v31*v31 * E1/E3) / ((1+v21) * delta)
-        C13 = E1*v31 / delta
-        C33 = E3 * (1+2*v31*v31*E1/E3) / delta
+        delta1, delta2, delta3 = self.get_calculable_constants()
+
+        C11 = E1*( 1 -v31*v31 * E1/E3) / ((1+v21) * delta1)
+        C12 = E1*(v21+v31*v31 * E1/E3) / ((1+v21) * delta1)
+        C13 = E1*v31 / delta1
+        C33 = E3 * (1 + 2*v31*v31 * E1/E3 / delta1)   # C44==C31
 
         C0 = (C11-C12)/C11
         C1 = (2*C33 + C11 + C12 - 4*C13 )/ (C11-C12)
@@ -1126,7 +1140,8 @@ class CohenModel(LaplaceModel):
         I1rts_s = I1(sqrt(s)) / sqrt(s)
         I0rts = I0(sqrt(s))
 
-        F = (C1 * I0rts - C2*C0*I1rts_s)/(I0rts-C0*I1rts_s)  * eps_zz
+        # F is the load intensity
+        F = (C1*I0rts - C2*C0*I1rts_s) / (I0rts - C0*I1rts_s)  * eps_zz
 
         return F
 
@@ -1144,23 +1159,10 @@ class CohenModel(LaplaceModel):
         self.alpha2_vals=alpha2_vals
         self.saved_bessel_len = bessel_len
 
-    def get_calculable_constants(self):
-        t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
-        v31sq = v31 * v31
-
-        delta1 = 1 - v21 - 2*v31sq*E1/E3
-        delta2 = (1 - v31sq*E1/E3)/(1+v21)
-        delta3 = (1 - 2*v31sq)*delta2/delta1
-        return delta1, delta2, delta3
-
-    @staticmethod
-    def get_calculable_constant_names():
-        return "delta1", "delta2", "delta3",
-
     """
     @classmethod
     def inverted_value_units(cls):
-        return "Newtons"  # Newtons"""
+        return "" """
 
     def inverted_value(self, t, bessel_len=20):
         """

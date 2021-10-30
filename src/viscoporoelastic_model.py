@@ -1114,16 +1114,6 @@ class CohenModel(LaplaceModel):
         delta1 = 1 - v21 - 2*v31sq*E1/E3
         delta2 = (1 - v31sq*E1/E3)/(1+v21)
         delta3 = (1 - 2*v31sq)*delta2/delta1
-        return delta1, delta2, delta3
-
-    @staticmethod
-    def get_calculable_constant_names():
-        return "delta1", "delta2", "delta3",
-
-    def laplace_value(self, s):
-        t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
-
-        delta1, delta2, delta3 = self.get_calculable_constants()
 
         C11 = E1*( 1 -v31*v31 * E1/E3) / ((1+v21) * delta1)
         C12 = E1*(v21+v31*v31 * E1/E3) / ((1+v21) * delta1)
@@ -1133,6 +1123,17 @@ class CohenModel(LaplaceModel):
         C0 = (C11-C12)/C11
         C1 = (2*C33 + C11 + C12 - 4*C13 )/ (C11-C12)
         C2 = 2 *(C33*(C11-C12) + C11*(C11+C12-4*C13) + 2*C13*C13  ) / (C11-C12)**2
+
+        return delta1, delta2, delta3, C11, C12, C13, C33, C0, C1, C2,
+
+    @staticmethod
+    def get_calculable_constant_names():
+        return "Δ1", "Δ2", "Δ3", "C11", "C12", "C13", "C33", "C0", "C1", "C2",
+
+    def laplace_value(self, s):
+        t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
+
+        delta1, delta2, delta3, _, _, _, _, C0, C1, C2 = self.get_calculable_constants()
 
         eps_zz = strain_rate * tg * (1 - exp(-t0_tg * s))/ (s*s)
 
@@ -1176,17 +1177,12 @@ class CohenModel(LaplaceModel):
         """
         t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
 
-        delta1, delta2, delta3 = self.get_calculable_constants()
-        """v31sq = v31 * v31
-        delta1 = 1 - v21 - 2*v31sq*E1/E3
-        delta2 = (1 - 2*v31sq*E1/E3)/(1+v21)
-        delta3 = (1-2*v31sq)*delta2/delta1"""
+        delta1, delta2, delta3, _, _, _, _, C0, C1, C2 = self.get_calculable_constants()
 
         if bessel_len > self.saved_bessel_len:
             self.setup_constants(bessel_len=bessel_len)
         alpha2_vals = self.alpha2_vals
 
-        denom = alpha2_vals*(delta2*delta2*alpha2_vals - delta1/(1+v21))
         #F = np.zeros(shape=np.array(t).shape )
         #F = E3*strain_rate*t + \
         #    E1*strain_rate*tg * (1/8 + sum(exp(-alpha2_N*t/tg)/denom for alpha2_N in alpha2_vals) )

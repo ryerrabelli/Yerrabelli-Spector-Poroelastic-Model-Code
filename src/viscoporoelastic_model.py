@@ -1124,16 +1124,29 @@ class CohenModel(LaplaceModel):
         C1 = (2*C33 + C11 + C12 - 4*C13 )/ (C11-C12)
         C2 = 2 *(C33*(C11-C12) + C11*(C11+C12-4*C13) + 2*C13*C13  ) / (C11-C12)**2
 
+        # Units of delta1, delta2, and delta3 are non-dimensional
+        # Units of C11, C12, C13, and C33 are pressure units (the same units as E1 and E3 so kPa in this case)
+        # Units of C0, C1, and C2 are non-dimensional
+        # The factor to make things dimensional is to multiply by (C11-C12)/2
         return delta1, delta2, delta3, C11, C12, C13, C33, C0, C1, C2,
 
     @staticmethod
     def get_calculable_constant_names():
         return "Δ1", "Δ2", "Δ3", "C11", "C12", "C13", "C33", "C0", "C1", "C2",
 
-    def laplace_value(self, s):
+    def laplace_value(self, s, dimensional:bool=True):
+        """
+        Result units are in pressure units (the same units as E1 and E3 so kPa in this case)
+        :param s:
+        :type s:
+        :param dimensional:
+        :type dimensional: bool
+        :return:
+        :rtype:
+        """
         t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
 
-        delta1, delta2, delta3, _, _, _, _, C0, C1, C2 = self.get_calculable_constants()
+        delta1, delta2, delta3, C11, C12, C13, C33, C0, C1, C2 = self.get_calculable_constants()
 
         eps_zz = strain_rate * tg * (1 - exp(-t0_tg * s))/ (s*s)
 
@@ -1143,6 +1156,9 @@ class CohenModel(LaplaceModel):
 
         # F is the load intensity
         F = (C1*I0rts - C2*C0*I1rts_s) / (I0rts - C0*I1rts_s)  * eps_zz
+
+        if dimensional:
+            F = F * (C11-C12)/2
 
         return F
 
@@ -1218,19 +1234,20 @@ class CohenModel1998(CohenModel):
     v21 = 0.3  # like Vrtheta
     v31 = 0  # like Vrz
 
-    def inverted_valuex(self, t, bessel_len=20):
+    def inverted_valuex(self, t, bessel_len=20, dimensional:bool=True):
         """
         Implemented (and override) the inherited method
+        Result units are in pressure units (the same units as E1 and E3 so kPa in this case)
         :param t:
         :type t:
         :param bessel_len:
-        :type bessel_len:
+        :type bessel_len: bool
         :return:
         :rtype:
         """
         t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
         t0=t0_tg*tg
-        delta1, delta2, delta3 = self.get_calculable_constants()
+        delta1, delta2, delta3, C11, C12, C13, C33, C0, C1, C2 = self.get_calculable_constants()
         E1_E3 = E1/E3
         if bessel_len > self.saved_bessel_len:
             self.setup_constants(bessel_len=bessel_len)
@@ -1244,6 +1261,9 @@ class CohenModel1998(CohenModel):
         summation =np.sum(summation, axis=0)
         part2 = E1_E3*delta3*(1/8-summation)
         F=E3*strain_rate*t0 * (part1+part2)
+
+        if dimensional:
+            F = F * (C11-C12)/2
 
         return F
 

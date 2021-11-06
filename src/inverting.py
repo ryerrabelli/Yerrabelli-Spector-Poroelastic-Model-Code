@@ -27,8 +27,68 @@ def reload_imports():
     importlib.reload(utils)
 
 
-def euler_inversion(f_s, times, Marg=None):
+def talbot_inversion(F_s, times, shift=0.0, N=24, use_mpf=False):
     """
+    https://code.activestate.com/recipes/576938/
+    :param f_s:
+    :type f_s:
+    :param times:
+    :type times:
+    :param shift:
+    :type shift:
+    :param N:
+    :type N:
+    :return:
+    :rtype:
+    """
+    if times == 0:
+        print("ERROR:   Inverse transform can not be calculated for t=0")
+        return ("Error");
+
+        # Initiate the stepsize
+    h = 2 * pi / N
+
+    ans = 0.0
+    # parameters from
+    # T. Schmelzer, L.N. Trefethen, SIAM J. Numer. Anal. 45 (2007) 558-571
+
+    if use_mpf:
+        import mpmath
+        #from mpmath import mpf, mpc
+        # I don't think mpmath.pi vs np.pi should make a difference as it is a constant
+        #from mpmath import sin, tan, exp
+        #sin = mpmath.sin, tan = mpmath.tan, exp = mpmath.exp
+        sin = np.frompyfunc(mpmath.sin, nin=1, nout=1)
+        tan = np.frompyfunc(mpmath.tan, nin=1, nout=1)
+        exp = np.frompyfunc(mpmath.exp, nin=1, nout=1)
+
+        c1 = mpmath.mpf('0.5017')
+        c2 = mpmath.mpf('0.6407')
+        c3 = mpmath.mpf('0.6122')
+        c4 = mpmath.mpc('0', '0.2645')  # imaginary aka 0.2645i or 0.2645j
+    else:
+        sin = np.sin, tan = np.tan, exp = np.exp
+        c1=0.5017
+        c2=0.6407
+        c3=0.6122
+        c4=0.2645j
+
+    # The for loop is evaluating the Laplace inversion at each point theta i
+    #   which is based on the trapezoidal rule
+    for k in range(N):
+        theta = -pi + (k + 0.5) * h
+        z = shift + N/times *(c1*theta/tan(c2*theta) - c3 + c4*theta)
+        dz = N/times * (-c1*c2*theta/sin(c2*theta)**2 + c1/tan(c2*theta)+c4)
+        ans += exp(z * times) * F_s(z) * dz
+
+    return ((h/(2j*pi)) * ans).real
+
+
+def euler_inversion(F_s, times, Marg=None):
+    """
+    Higher M (Marg) will create better precision. However, Marg>32 is unstable
+    "Given M, the required system precision is only about M, but it produces about 0􏰎6M significant digits for good
+    transforms."
     For the comments, assume that N represents the length of the 1D array "times"
     """
     if Marg is None:
@@ -53,7 +113,7 @@ def euler_inversion(f_s, times, Marg=None):
     eta_mesh, _ = meshgrid(eta, times)    # _ doesn't need to be saved as a variable as it should be the same as t_mesh
     try:
         # (beta_mesh / t_mesh).shape = (N, 2*Marg+1)
-        f_s_val, is_inf = f_s(beta_mesh / t_mesh, return_error_inds=True)
+        f_s_val, is_inf = F_s(beta_mesh / t_mesh, return_error_inds=True)
         # ilt.shape = times.shape = (N,)
         ilt = 10 ** (Marg/3) / times * sum (eta_mesh * real(f_s_val), axis=1)
         
@@ -62,7 +122,7 @@ def euler_inversion(f_s, times, Marg=None):
               f"led to +/- infinity. The indices of these time points are {utils.abbreviate(indices_is_inf)}. The values are {times[indices_is_inf]}")
         
     except TypeError as exc:  # **function_name***() got an unexpected keyword argument 'return_error_inds'
-        ilt = 10 ** (Marg/3) / times * sum (eta_mesh * real(f_s(beta_mesh / t_mesh)), axis=1)
+        ilt = 10 ** (Marg/3) / times * sum (eta_mesh * real(F_s(beta_mesh / t_mesh)), axis=1)
         
     return ilt
 

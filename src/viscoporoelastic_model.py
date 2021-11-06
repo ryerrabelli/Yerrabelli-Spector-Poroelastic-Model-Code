@@ -1,7 +1,9 @@
 
 import numpy as np
+import mpmath
 import scipy.optimize
 from numpy import exp
+#from mpmath import exp
 from numpy import sqrt
 import scipy as sp
 import abc
@@ -21,7 +23,9 @@ def I1(x): return sp.special.iv(1, x) #besseli(1, x)
 def J0(x): return sp.special.jv(0, x)
 def J1(x): return sp.special.jv(1, x)
 def ln(x): return np.log(x)  #import math #return math.log(x)
-
+#exp = np.frompyfunc(mpmath.exp, nin=1, nout=1)
+#def exp(x):
+    #np.exp()
 
 ### Start combined matlab/python code
 
@@ -1134,7 +1138,7 @@ class CohenModel(LaplaceModel):
     def get_calculable_constant_names():
         return "Δ1", "Δ2", "Δ3", "C11", "C12", "C13", "C33", "C0", "C1", "C2",
 
-    def laplace_value(self, s, dimensional:bool=True):
+    def laplace_value(self, s, dimensional: bool = True):
         """
         Result units are in pressure units (the same units as E1 and E3 so kPa in this case)
         :param s:
@@ -1176,10 +1180,10 @@ class CohenModel(LaplaceModel):
         self.alpha2_vals=alpha2_vals
         self.saved_bessel_len = bessel_len
 
-    """
     @classmethod
     def inverted_value_units(cls):
-        return "" """
+        # Result units are in pressure units (the same units as E1 and E3 so kPa in this case)
+        return "kPa"
 
     def inverted_value(self, t, bessel_len=20):
         """

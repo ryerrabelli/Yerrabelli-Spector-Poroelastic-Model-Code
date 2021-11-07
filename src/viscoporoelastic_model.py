@@ -12,6 +12,7 @@ import abc
 # Unlike basic types i.e. dict and list, the object types i.e. Dict and List allow you to do more complex annotations
 # like defining the output as Tuple[Union[tuple, Any]] as opposed to just tuple
 from typing import Tuple, Union, Any, Dict, List, AnyStr
+from collections.abc import Callable
 Name = str   # Resource on type hints: https://docs.python.org/3/library/typing.html
 Names = Tuple[str]
 Value = Any
@@ -1219,6 +1220,8 @@ class CohenModel(LaplaceModel):
         #    sum((exp(-alpha2_N*t/tg)-exp(-alpha2_N*(t/tg-t0_tg)))/denom for alpha2_N in alpha2_vals)
         #print(f"delta1/(1+v21)={delta1/(1+v21)}")
         #print(f"E1 * strain_rate * tg * delta3={E1 * strain_rate * tg * delta3}")
+
+        """
         F = np.where(
             t / tg < t0_tg,
             E3 * strain_rate * t + \
@@ -1233,6 +1236,34 @@ class CohenModel(LaplaceModel):
                 for alpha2_N in alpha2_vals
                 )
             )
+        return F
+        """
+
+        F = np.piecewise(t,
+                         [t/tg<0, (t/tg>=0) & (t/tg<t0_tg), t/tg>=t0_tg],
+            [ 0,
+              (
+                lambda t:
+                E3 * strain_rate * t
+                + E1 * strain_rate * tg * delta3 *
+                (1/8 - sum(
+                            exp(-alpha2_N * t/tg)
+                            / (alpha2_N*(delta2*delta2*alpha2_N - delta1/(1+v21)))
+                            for alpha2_N in alpha2_vals
+                          )
+                 )
+            ),
+            (
+                lambda t:
+                E3 * strain_rate * t0_tg*tg
+                - E1 * strain_rate * tg * delta3 *
+                sum(
+                    (exp(-alpha2_N * t/tg) - exp(-alpha2_N * (t/tg - t0_tg)))
+                    / (alpha2_N*(delta2*delta2*alpha2_N - delta1/(1+v21)))
+                    for alpha2_N in alpha2_vals
+                )
+            )]
+        )
 
         return F
 

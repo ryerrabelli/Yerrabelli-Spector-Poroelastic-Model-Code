@@ -20,6 +20,8 @@ from numpy import real
 
 import utils
 
+from collections.abc import Callable
+
 
 def reload_imports():
     import importlib
@@ -27,7 +29,30 @@ def reload_imports():
     importlib.reload(utils)
 
 
-def talbot_inversion(F_s, times, shift=0.0, N=24, use_mpf=False):
+def forward_laplace_transform(f_t, s, times=None):
+    """
+    s=np.linspace(0,3,num=4, endpoint=True)
+    Supply f_t as either a function or as a collection of values already (in which case, their times must be specified)
+    https://dsp.stackexchange.com/questions/66428/how-to-compute-laplace-transform-in-python
+    """
+    if times is None:
+        #times = np.linspace(0, 5, num=6, endpoint=True)
+        times = np.linspace(0, 100, num=11, endpoint=True)
+
+    if callable(f_t):  # check if callable. Can be either a callable (function) or already calculated values
+        f_t_vals = f_t(times)
+
+    else:
+        f_t_vals = f_t
+
+    t_mesh, s_mesh = np.meshgrid(times, s)  # shape of arrays is (s_len, t_len). Notation is (row, cols).
+
+    F_s = np.trapz( f_t_vals*np.exp(-s_mesh*t_mesh), x=times, axis=1)
+    return F_s
+    pass
+
+
+def talbot_inversion(F_s: Callable, times, shift=0.0, N=24, use_mpf=False):
     """
     https://code.activestate.com/recipes/576938/
     :param f_s:

@@ -23,7 +23,14 @@ def I1(x): return sp.special.iv(1, x) #besseli(1, x)
 def J0(x): return sp.special.jv(0, x)
 def J1(x): return sp.special.jv(1, x)
 def ln(x): return np.log(x)  #import math #return math.log(x)
-#exp = np.frompyfunc(mpmath.exp, nin=1, nout=1)
+"""
+I0 = np.frompyfunc(lambda x: mpmath.besseli(0,x), nin=1, nout=1)
+I1 = np.frompyfunc(lambda x: mpmath.besseli(1,x), nin=1, nout=1)
+J0 = np.frompyfunc(lambda x: mpmath.besselj(0,x), nin=1, nout=1)
+J1 = np.frompyfunc(lambda x: mpmath.besselj(1,x), nin=1, nout=1)
+ln = np.frompyfunc(mpmath.ln, nin=1, nout=1)
+exp = np.frompyfunc(mpmath.exp, nin=1, nout=1)
+"""
 #def exp(x):
     #np.exp()
 
@@ -241,7 +248,8 @@ class TestModel2(AnalyticallyInvertableModel, FittableLaplaceModel):
         alpha2_vals = np.zeros(shape=bessel_len)
         for n in range(bessel_len):
             # Use (n+1)*pi instead of n*pi bc python is zero-indexed unlike Matlab
-            alpha2_vals[n] = scipy.optimize.fsolve(func=self.characteristic_eqn, x0=(n + 1) * np.pi)
+            alpha = scipy.optimize.fsolve(func=self.characteristic_eqn, x0=(n + 1) * np.pi)
+            alpha2_vals[n] = alpha ** 2
 
         A_vals = np.zeros(shape=bessel_len)
         for n in range(bessel_len):

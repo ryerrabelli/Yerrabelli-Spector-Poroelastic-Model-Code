@@ -41,7 +41,7 @@ def talbot_inversion(F_s, times, shift=0.0, N=24, use_mpf=False):
     :return:
     :rtype:
     """
-    if times == 0:
+    if np.any(times == 0):
         print("ERROR:   Inverse transform can not be calculated for t=0")
         return ("Error");
 
@@ -67,11 +67,12 @@ def talbot_inversion(F_s, times, shift=0.0, N=24, use_mpf=False):
         c3 = mpmath.mpf('0.6122')
         c4 = mpmath.mpc('0', '0.2645')  # imaginary aka 0.2645i or 0.2645j
     else:
-        sin = np.sin, tan = np.tan, exp = np.exp
-        c1=0.5017
-        c2=0.6407
-        c3=0.6122
-        c4=0.2645j
+        #sin = np.sin, tan = np.tan, exp = np.exp
+        from numpy import sin, tan, exp
+        c1 = 0.5017
+        c2 = 0.6407
+        c3 = 0.6122
+        c4 = 0.2645j
 
     # The for loop is evaluating the Laplace inversion at each point theta i
     #   which is based on the trapezoidal rule
@@ -113,9 +114,9 @@ def euler_inversion(F_s, times, Marg=None):
     eta_mesh, _ = meshgrid(eta, times)    # _ doesn't need to be saved as a variable as it should be the same as t_mesh
     try:
         # (beta_mesh / t_mesh).shape = (N, 2*Marg+1)
-        f_s_val, is_inf = F_s(beta_mesh / t_mesh, return_error_inds=True)
+        F_s_val, is_inf = F_s(beta_mesh / t_mesh, return_error_inds=True)
         # ilt.shape = times.shape = (N,)
-        ilt = 10 ** (Marg/3) / times * sum (eta_mesh * real(f_s_val), axis=1)
+        ilt = 10 ** (Marg/3) / times * sum (eta_mesh * real(F_s_val), axis=1)
         
         (indices_is_inf, ) = np.nonzero(is_inf)
         print(f"Warning the function could not be inverted at some ({len(indices_is_inf)}/{len(is_inf)}) values of t as the I1(sqrt(f)) component "

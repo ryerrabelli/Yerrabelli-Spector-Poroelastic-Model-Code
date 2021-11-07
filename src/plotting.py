@@ -223,8 +223,12 @@ def plot_laplace_analysis(funcs,  # func (funcs) can either be a function or an 
         if is_in_anal_times_too.any():  # If no elements in common, no point in getting the reverse indices
             is_in_num_times_too = np.isin(input_times, input_times_anal, assume_unique=assume_times_unique)
             #inversion_error = (inverted_vals_numerical-inverted_vals_analytical)/inverted_vals_analytical
-            inversion_error_all = np.array([(inverted_vals_numerical[is_in_anal_times_too] - inverted_vals_analytical[is_in_num_times_too]) \
-                                   / inverted_vals_analytical[is_in_num_times_too] for inverted_vals_numerical,inverted_vals_analytical in zip(inverted_vals_numerical_all,inverted_vals_analytical_all)  ])
+            inversion_error_all = np.array([
+                (inverted_vals_numerical[is_in_anal_times_too] - inverted_vals_analytical[is_in_num_times_too])
+                / inverted_vals_analytical[is_in_num_times_too]
+                for inverted_vals_numerical, inverted_vals_analytical
+                in zip(inverted_vals_numerical_all, inverted_vals_analytical_all)
+            ])
 
     ####################################################
     # SET UP PLOT STRUCTURE
@@ -314,7 +318,7 @@ def plot_laplace_analysis(funcs,  # func (funcs) can either be a function or an 
             plot_x_vals = plot_times_anal[is_in_num_times_too]
             if is_in_anal_times_too.any():
                 for inversion_error, in zip(inversion_error_all):
-                    ax_curr.plot(plot_x_vals, inversion_error,
+                    ax_curr.plot(plot_x_vals, inversion_error * 100.0,
                                  ".-g" if funcs_ct == 1 else ".-")
                 if all(min(abs(inversion_error * 100.0)) < 0.1 for inversion_error, in zip(inversion_error_all)):
                     ax_curr.set_ylim([-100, 100])

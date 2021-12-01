@@ -8,3 +8,10 @@
 # Ignore compiled python files
 *.cpython-??.pyc
 src/__pycache__/*
+docs/Resources/*
+
+src/__pycache__/visco*
+*.pyc
+src/*.pyc
+src/__pycache__/*.cpython-38.pyc
+src/__pycache__/viscoporoelastic_model.cpython-38.pyc

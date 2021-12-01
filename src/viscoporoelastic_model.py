@@ -1355,10 +1355,6 @@ def getCohenModelModified(**kwargs):
     return CohenModelModified()
 
 
-def complex_array_to_rgb(X, theme='light', rmax=None):
-    """
-    """
-    pass
 
 
 if __name__ == '__main__':

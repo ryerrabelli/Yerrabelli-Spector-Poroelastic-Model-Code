@@ -41,9 +41,10 @@ def forward_laplace_transform(f_t, s, times=None):
 
     if callable(f_t):  # check if callable. Can be either a callable (function) or already calculated values
         f_t_vals = f_t(times)
-
     else:
         f_t_vals = f_t
+
+    assert times.shape == f_t_vals.shape
 
     t_mesh, s_mesh = np.meshgrid(times, s)  # shape of arrays is (s_len, t_len). Notation is (row, cols).
 
@@ -52,6 +53,8 @@ def forward_laplace_transform(f_t, s, times=None):
     pass
 
 
+# WARNING: If you add more possible paramaters to the talbot_inversion, make sure to pass them on to the recursive call
+# inside the function
 def talbot_inversion(F_s: Callable, times, shift=0.0, N=24, use_mpf=False):
     """
     https://code.activestate.com/recipes/576938/
@@ -67,8 +70,13 @@ def talbot_inversion(F_s: Callable, times, shift=0.0, N=24, use_mpf=False):
     :rtype:
     """
     if np.any(times == 0):
-        print("ERROR:   Inverse transform can not be calculated for t=0")
-        return ("Error");
+        # full_like creates new array of similar size/type as times, but has np.nan for value
+        output = np.full_like(times, np.nan)
+        nonzero_time_ind = np.nonzero(times)
+        output[nonzero_time_ind] = talbot_inversion(F_s, times[nonzero_time_ind],
+                                                    shift=shift, N=N, use_mpf=use_mpf)
+        print("Warning:   Inverse transform can not be calculated for t=0")
+        return output
 
         # Initiate the stepsize
     h = 2 * pi / N
@@ -97,7 +105,7 @@ def talbot_inversion(F_s: Callable, times, shift=0.0, N=24, use_mpf=False):
         c1 = 0.5017
         c2 = 0.6407
         c3 = 0.6122
-        c4 = 0.2645j
+        c4 = 0.2645j  # imaginary number
 
     # The for loop is evaluating the Laplace inversion at each point theta i
     #   which is based on the trapezoidal rule
@@ -105,9 +113,13 @@ def talbot_inversion(F_s: Callable, times, shift=0.0, N=24, use_mpf=False):
         theta = -pi + (k + 0.5) * h
         z = shift + N/times *(c1*theta/tan(c2*theta) - c3 + c4*theta)
         dz = N/times * (-c1*c2*theta/sin(c2*theta)**2 + c1/tan(c2*theta)+c4)
+        # Below is part of the inverse laplace transform definition equation
         ans += exp(z * times) * F_s(z) * dz
 
-    return ((h/(2j*pi)) * ans).real
+    # Below is part of the inverse laplace transform definition equation
+    # Except, real should not be there
+    output = ((h/(2j*pi)) * ans).real
+    return output
 
 
 def euler_inversion(F_s, times, Marg=None):

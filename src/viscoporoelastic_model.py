@@ -27,7 +27,6 @@ def J0(x): return sp.special.jv(0, x)
 def J1(x): return sp.special.jv(1, x)
 def ln(x): return np.log(x)  # import math #return math.log(x)
 
-
 """
 I0 = np.frompyfunc(lambda x: mpmath.besseli(0,x), nin=1, nout=1)
 I1 = np.frompyfunc(lambda x: mpmath.besseli(1,x), nin=1, nout=1)
@@ -1174,7 +1173,7 @@ class CohenModel(LaplaceModel):
     def get_calculable_constant_names():
         return "Δ1", "Δ2", "Δ3", "C11", "C12", "C13", "C33", "C0", "C1", "C2",
 
-    def laplace_value(self, s, dimensional: bool = True):
+    def laplace_value(self, s, dimensional: bool = True, eps_zz: np.ndarray = None):
         """
         Result units are in pressure units (the same units as E1 and E3 so kPa in this case)
         :param s:
@@ -1188,7 +1187,8 @@ class CohenModel(LaplaceModel):
 
         delta1, delta2, delta3, C11, C12, C13, C33, C0, C1, C2 = self.get_calculable_constants()
 
-        eps_zz = strain_rate * tg * (1 - exp(-t0_tg * s)) / (s*s)
+        if eps_zz is None:
+            eps_zz = strain_rate * tg * (1 - exp(-t0_tg * s)) / (s*s)
 
         #I1rts = I1(sqrt(s))
         I1rts_s = I1(sqrt(s)) / sqrt(s)
@@ -1353,8 +1353,6 @@ def getCohenModelModified(**kwargs):
         v21 = kwargs.get("v21",     superclass.v21)  # 0.75  # like Vrtheta
         v31 = kwargs.get("v31",     superclass.v31)  # 0.24  # like Vrz
     return CohenModelModified()
-
-
 
 
 if __name__ == '__main__':

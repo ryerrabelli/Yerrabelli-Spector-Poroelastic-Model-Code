@@ -502,6 +502,7 @@ def plot_laplace_analysis(funcs,  # func (funcs) can either be a function or an 
 
                 # Note- if a y value is 0.5, then percentformatter makes it 0.5% not 50%.
                 # Thus have to multiply by 100 before getting the y values.
+                import matplotlib
                 ax_curr.yaxis.set_major_formatter(
                     matplotlib.ticker.PercentFormatter())
 

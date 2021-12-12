@@ -147,6 +147,7 @@ def plot_laplace_analysis(funcs,  # func (funcs) can either be a function or an 
                           plot_times_anal=None,
                           # inv_funcs_anal has to be None or a list of same length as func (if so, each element can still be None)
                           inv_funcs_anal=None,
+                          # used in inversion algorithms
                           Marg=None,
                           # assume_times_unique may speed up the function for plotting the numerical to analytic solution error
                           assume_times_unique=True,
@@ -155,9 +156,10 @@ def plot_laplace_analysis(funcs,  # func (funcs) can either be a function or an 
                           legends_to_show_ct=1,
                           # string values for fontsize are relative, while int are absolute in pts. String values: {'xx-small', 'x-small', 'small', 'medium', 'large', 'x-large', 'xx-large'}
                           legend_fontsize="small",
-                          do_plot_laplace_times_s=None,  # boolean with None as default
+                          do_plot_laplace_times_s=None,  # boolean with None as default. Whether to also plot F(s)*s
                           func=None,  # deprecated, replaced by funcs
                           plot_mode="standard",  # standard vs simple
+                          scales=1,  # scale factor. Calculations are divided by this value or values
                           ):
 
     plot_mode_options = ["standard", "simple"]
@@ -277,7 +279,8 @@ def plot_laplace_analysis(funcs,  # func (funcs) can either be a function or an 
         inv_funcs_anal = [inv_funcs_anal] * funcs_ct
     if func_labels is None:
         func_labels = [None] * len(funcs)
-
+    if not isinstance(scales, collections.abc.Collection):
+        scales = [scales] * funcs_ct
     # Default values
     # funcs = itertools.repeat(None)
     # laplace_vals_all = itertools.repeat(None)
@@ -305,12 +308,12 @@ def plot_laplace_analysis(funcs,  # func (funcs) can either be a function or an 
     ####################################################
     t0 = timer.time()
     # Non-positive s values give an error "invalid value encountered in sqrt"
-    laplace_vals_all = [func(input_s) for func in funcs]
+    laplace_vals_all = [func(input_s)/scale for func, scale in zip(funcs, scales)]
     t1 = timer.time()
     print(
         f"It took {t1-t0:0.4f} sec to evaluate the Laplace space func for {len(input_s)} input s vals.")
     inverted_vals_numerical_all = np.array([
-        inverting.euler_inversion(func, input_times / time_const, Marg=Marg) for func in funcs
+        inverting.euler_inversion(func, input_times / time_const, Marg=Marg)/scale  for func, scale in zip(funcs, scales)
         #mpmath.invertlaplace(func, input_times / time_const, method='talbot') for func in funcs
     ])
     t2 = timer.time()
@@ -318,7 +321,7 @@ def plot_laplace_analysis(funcs,  # func (funcs) can either be a function or an 
         f"It took {t2-t1:0.4f} sec to numerically invert Laplace the func for {len(input_times)} input times.")
 
     inverted_vals_analytical_all = np.array([(None if inv_func_anal is None else inv_func_anal(
-        input_times_anal)) for inv_func_anal in inv_funcs_anal])
+        input_times_anal)/scale) for inv_func_anal, scale in zip(inv_funcs_anal,scales)])
     # Default value, can be overwritten later
     inversion_error_all = np.array([None]*funcs_ct)
     if any(inverted_vals_analytical is not None for inverted_vals_analytical in inverted_vals_analytical_all):

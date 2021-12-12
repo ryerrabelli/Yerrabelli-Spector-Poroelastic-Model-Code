@@ -27,6 +27,7 @@ def J0(x): return sp.special.jv(0, x)
 def J1(x): return sp.special.jv(1, x)
 def ln(x): return np.log(x)  # import math #return math.log(x)
 
+
 """
 I0 = np.frompyfunc(lambda x: mpmath.besseli(0,x), nin=1, nout=1)
 I1 = np.frompyfunc(lambda x: mpmath.besseli(1,x), nin=1, nout=1)
@@ -1145,6 +1146,12 @@ class CohenModel(LaplaceModel):
     def get_predefined_constant_names():
         return "t0_tg", "tg", "strain_rate", "E1", "E3", "v21", "v31"
 
+    @staticmethod
+    def get_predefined_constant_names_latex():
+        """The $ is not included inside the returned strings"""
+        return "t_0/t_g", "t_g", r"\dot{\varepsilon}",     \
+               "E_1", "E_3", r"\nu_{21}", r"\nu_{31}"
+
     def get_calculable_constants(self):
         t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
         v31sq = v31 * v31
@@ -1268,7 +1275,8 @@ class CohenModel(LaplaceModel):
         """
 
         F = np.piecewise(t,
-                         [t/tg < 0, (t/tg >= 0) & (t/tg < t0_tg),
+                         [t/tg < 0,
+                         (t/tg >= 0) & (t/tg < t0_tg),
                           t/tg >= t0_tg],
                          [0,
                              (
@@ -1343,15 +1351,36 @@ class CohenModel1998(CohenModel):
 
 def getCohenModelModified(**kwargs):
     class CohenModelModified(CohenModel):
+        # pylint: disable=E221, E272
+        # Below comment disables pylint warning about whitespace around =
+        # https://pycodestyle.pycqa.org/en/latest/intro.html
+
         superclass = CohenModel
-        t0_tg = kwargs.get("t0_tg",   superclass.t0_tg)  # 10 / 40.62;
-        tg = kwargs.get("tg",      superclass.tg)  # 40.62  # sec
-        strain_rate = kwargs.get(
-            "strain_rate", superclass.strain_rate)  # 0.01;  # per sec
-        E1 = kwargs.get("E1",      superclass.E1)  # 8.5  # kPa
-        E3 = kwargs.get("E3",      superclass.E3)  # 19  # kPa
-        v21 = kwargs.get("v21",     superclass.v21)  # 0.75  # like Vrtheta
-        v31 = kwargs.get("v31",     superclass.v31)  # 0.24  # like Vrz
+        t0_tg = kwargs.get("t0_tg", superclass.t0_tg)  # 10 / 40.62; # unitless
+        tg    = kwargs.get("tg",       superclass.tg)  # 40.62  # sec
+        strain_rate =    \
+                kwargs.get("strain_rate", superclass.strain_rate)  # 0.01;  # 1/sec
+
+        # E1, E3 vars in kPa
+        E1    = kwargs.get("E1",      superclass.E1)  # 8.5 # kPa
+        E3    = kwargs.get("E3",      superclass.E3)  # 19  # kPa
+
+        # v21 and v31 are unitless. Note- "v" actually represents greek nu (ν)
+        v21   = kwargs.get("v21",     superclass.v21)  # 0.75 # like Vrtheta, unitless
+        v31   = kwargs.get("v31",     superclass.v31)  # 0.24 # like Vrz, unitless
+
+        if kwargs.get("t0") is not None:
+            if not kwargs.get("t0_tg"):
+                t0_tg = kwargs.get("t0") / tg
+            if not kwargs.get("tg"):
+                tg = t0_tg / kwargs.get("t0")
+
+        if kwargs.get("E1_E3") is not None:
+            if not kwargs.get("E1"):
+                E1 = kwargs.get("E1_E3") * E3
+            if not kwargs.get("E3"):
+                E3 = E1 / kwargs.get("E1_E3")
+
     return CohenModelModified()
 
 

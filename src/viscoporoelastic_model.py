@@ -2,9 +2,6 @@
 import numpy as np
 import mpmath
 import scipy.optimize
-from numpy import exp
-#from mpmath import exp
-from numpy import sqrt
 import scipy as sp
 import abc
 
@@ -21,23 +18,13 @@ Values = Tuple[Any]
 # Numpy besseli (i0) function doesn't support complex values and only has order 0
 
 
-def I0(x): return sp.special.iv(0, x)  # return np.i0(x); #besseli(0, x)
+"""def I0(x): return sp.special.iv(0, x)  # return np.i0(x); #besseli(0, x)
 def I1(x): return sp.special.iv(1, x)  # besseli(1, x)
 def J0(x): return sp.special.jv(0, x)
 def J1(x): return sp.special.jv(1, x)
-def ln(x): return np.log(x)  # import math #return math.log(x)
+def ln(x): return np.log(x)  # import math #return math.log(x)"""
 
 
-"""
-I0 = np.frompyfunc(lambda x: mpmath.besseli(0,x), nin=1, nout=1)
-I1 = np.frompyfunc(lambda x: mpmath.besseli(1,x), nin=1, nout=1)
-J0 = np.frompyfunc(lambda x: mpmath.besselj(0,x), nin=1, nout=1)
-J1 = np.frompyfunc(lambda x: mpmath.besselj(1,x), nin=1, nout=1)
-ln = np.frompyfunc(mpmath.ln, nin=1, nout=1)
-exp = np.frompyfunc(mpmath.exp, nin=1, nout=1)
-"""
-#def exp(x):
-#np.exp()
 
 ### Start combined matlab/python code
 
@@ -55,8 +42,74 @@ Vrtheta = 1; # Not actually v, but greek nu (represents Poisson's ratio)
 Err = 1;
 """
 
+from numpy import zeros
+from numpy import pi
+
+class LibraryEquations(abc.ABC):
+    @classmethod
+    @abc.abstractmethod  # classmethod is outside of abc.abstractmethod
+    def get_core_equations(cls):
+        raise NotImplementedError()
+
+
+class MpmathEquations:
+    I0 = np.frompyfunc(lambda x: mpmath.besseli(0,x), nin=1, nout=1)
+    I1 = np.frompyfunc(lambda x: mpmath.besseli(1,x), nin=1, nout=1)
+    Iv = np.frompyfunc(lambda x,v: mpmath.besseli(v,x), nin=2, nout=1)
+    J0 = np.frompyfunc(lambda x: mpmath.besselj(0,x), nin=1, nout=1)
+    J1 = np.frompyfunc(lambda x: mpmath.besselj(1,x), nin=1, nout=1)
+    Jv = np.frompyfunc(lambda x,v: mpmath.besselj(v,x), nin=2, nout=1)
+    ln = np.frompyfunc(mpmath.ln, nin=1, nout=1)
+    exp = np.frompyfunc(mpmath.exp, nin=1, nout=1)
+    sqrt = np.frompyfunc(mpmath.sqrt, nin=1, nout=1)
+    fsolve = np.frompyfunc(mpmath.findroot, nin=2, nout=1)
+
+    @classmethod
+    def get_core_equations(cls):
+        return cls.I0, cls.I1, cls.J0, cls.J1, cls.ln, cls.exp, cls.sqrt
+
+
+class ScipyEquations:
+    @staticmethod
+    def I0(x): return sp.special.iv(0, x)  # return np.i0(x); #besseli(0, x)
+    @staticmethod
+    def I1(x): return sp.special.iv(1, x)  # besseli(1, x)
+    @staticmethod
+    def Iv(x, v):    return sp.special.iv(v, x)
+    @staticmethod
+    def J0(x): return sp.special.jv(0, x)
+    @staticmethod
+    def J1(x): return sp.special.jv(1, x)
+    @staticmethod
+    def Jv(x, v):    return sp.special.jv(v, x)
+    @staticmethod
+    def ln(x): return np.log(x)  # import math #return math.log(x)
+    from numpy import exp
+    from numpy import sqrt
+    from scipy.optimize import fsolve
+
+    @classmethod
+    def get_core_equations(cls):
+        """Use like I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()"""
+        return cls.I0, cls.I1, cls.J0, cls.J1, cls.ln, cls.exp, cls.sqrt
+
 
 class LaplaceModel(abc.ABC):  # inheriting from abc.ABC means that this is abstract base class
+
+    def __init__(self, equation_library=None):
+        self.set_equation_library(equation_library)
+        super().__init__()
+        #super().__init__(self)
+
+    def set_equation_library(self,equation_library="scipy"):
+        if equation_library is not None and equation_library.lower() in ["mpmath","m"]:
+            self._equation_library = MpmathEquations
+        else:
+            self._equation_library = ScipyEquations
+
+    def get_core_equations(self):
+        return self._equation_library.get_core_equations()
+
     @classmethod
     def get_predefined_constants(cls) -> Values:
         return ()  # zero-length tuple, aka tuple()
@@ -201,6 +254,7 @@ class TestModel1(LaplaceModel):
 
     # , s, alpha=0.5, tg=7e-3, strain_rate=1e-4, t0=1e3
     def laplace_value(self, s, alpha=None, tg=None, strain_rate=None, t0=None):
+        I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         if alpha is None:
             alpha = self.alpha
         if tg is None:
@@ -229,6 +283,7 @@ class TestModel2(AnalyticallyInvertableModel, FittableLaplaceModel):
     """
 
     def __init__(self):
+        super().__init__(self)
         self.vs = 0
         self.tg = 7e3  # sec
         self.Es = 7e6  # Pa
@@ -257,19 +312,20 @@ class TestModel2(AnalyticallyInvertableModel, FittableLaplaceModel):
         return "alpha",  # 1-length tuple
 
     def characteristic_eqn(self, x):
+        I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         vs, tg, Es, eps0, a = self.get_fittable_parameters()
         return J1(x) - (1 - vs) / (1 - 2 * vs) * x * J0(x)
 
     def setup_constants(self, bessel_len=20):
         vs, tg, Es, eps0, a = self.get_fittable_parameters()
-        alpha2_vals = np.zeros(shape=bessel_len)
+        alpha2_vals = zeros(shape=bessel_len)
         for n in range(bessel_len):
             # Use (n+1)*pi instead of n*pi bc python is zero-indexed unlike Matlab
             alpha = scipy.optimize.fsolve(
-                func=self.characteristic_eqn, x0=(n + 1) * np.pi)
+                func=self.characteristic_eqn, x0=(n + 1) * pi)
             alpha2_vals[n] = alpha ** 2
 
-        A_vals = np.zeros(shape=bessel_len)
+        A_vals = zeros(shape=bessel_len)
         for n in range(bessel_len):
             temp = 1 - 2 * vs
             A_vals[n] = (1 - vs) * temp / (1 + vs) * 1 / \
@@ -280,6 +336,7 @@ class TestModel2(AnalyticallyInvertableModel, FittableLaplaceModel):
         self.saved_bessel_len = bessel_len
 
     def laplace_value(self, s):
+        I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         # type(self).get_predefined_constants()
         vs, tg, Es, eps0, a = self.get_fittable_parameters()
         alpha, = self.get_calculable_constants()
@@ -290,6 +347,7 @@ class TestModel2(AnalyticallyInvertableModel, FittableLaplaceModel):
         return F
 
     def inverted_value(self, t, bessel_len=20):
+        I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         vs, tg, Es, eps0, a = self.get_fittable_parameters()
 
         if bessel_len > self.saved_bessel_len:
@@ -299,9 +357,9 @@ class TestModel2(AnalyticallyInvertableModel, FittableLaplaceModel):
 
         summation = 0
         for n in range(bessel_len):
-            summation += A_vals[n] * np.exp(-alpha2_vals[n]*t/tg)
+            summation += A_vals[n] * exp(-alpha2_vals[n]*t/tg)
 
-        F = np.pi * a*a * -Es * eps0 * (1 + summation)
+        F = pi * a*a * -Es * eps0 * (1 + summation)
         return F
 
     @classmethod
@@ -319,6 +377,7 @@ class TestModel3(TestModel2):
         :param s:
         :return:
         """
+        I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         vs, tg, Es, eps0, a = self.get_fittable_parameters(
         )  # TestModel3.get_predefined_constants()
         alpha, = self.get_calculable_constants()
@@ -333,6 +392,7 @@ class TestModel3(TestModel2):
         Overrides super function
         :return:
         """
+        I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         vs, tg, Es, eps0, a = self.get_fittable_parameters(
         )  # type(self).get_predefined_constants()
 
@@ -343,7 +403,7 @@ class TestModel3(TestModel2):
 
         summation_a = 0
         for n in range(bessel_len):
-            summation_a += np.exp(-alpha2_vals[n]*t/tg)/(alpha2_vals[n]-1)
+            summation_a += exp(-alpha2_vals[n]*t/tg)/(alpha2_vals[n]-1)
 
         return summation_a
 
@@ -361,6 +421,7 @@ class TestModel4(FittableLaplaceModel):   # Dr. Spector sent this to me May 29, 
     """
 
     def __init__(self):
+        super().__init__(self)
         self.v = 0
         self.strain_rate = 0.0003  # 1e-3  # s^-1
         self.t0_tg = 0.1
@@ -390,6 +451,7 @@ class TestModel4(FittableLaplaceModel):   # Dr. Spector sent this to me May 29, 
         :param s:
         :return:
         """
+        I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         v, strain_rate, t0_tg, tg = self.get_fittable_parameters()
         t0, eps0, C0 = self.get_calculable_constants()
 
@@ -414,6 +476,7 @@ class ViscoporoelasticModel0(FittableLaplaceModel):
     Ezz = 10  # Note- don't mix up Ezz with epszz
 
     def __init__(self):
+        super().__init__(self)
         self.c = 1
         self.tau1 = 1
         self.tau2 = 1
@@ -496,6 +559,7 @@ class ViscoporoelasticModel0(FittableLaplaceModel):
         Vrtheta = self.Vrtheta;  # Not actually v, but greek nu (represents Poisson's ratio)
         Err = self.Err;
         """
+        I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         c, tau1, tau2, tg, Vrtheta, Err = self.set_fitted_parameters(
             c=c, tau1=tau1, tau2=tau2, tg=tg, Vrtheta=Vrtheta, Err=Err)
 
@@ -572,6 +636,7 @@ class ArmstrongIsotropicModel(FittableLaplaceModel):   # Aka TestModel5
     """
 
     def __init__(self):
+        super().__init__(self)
         self.v = 0
         self.strain_rate = 1e-4  # s^-1
         self.t0_tg = 100/7e3
@@ -610,6 +675,7 @@ class ArmstrongIsotropicModel(FittableLaplaceModel):   # Aka TestModel5
         :param s:
         :return:
         """
+        I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         v, strain_rate, t0_tg, tg = self.get_fittable_parameters()
         t0, eps0, C0 = self.get_calculable_constants()
 
@@ -646,6 +712,7 @@ class ViscoporoelasticModel1(FittableLaplaceModel):
         """
         # Source: https://stackoverflow.com/questions/12191075/is-there-a-shortcut-for-self-somevariable-somevariable-in-a-python-class-con/12191118
         vars(self).update((k, v) for k, v in vars().items() if k != "self")
+        super().__init__(self)
 
     @classmethod
     def get_predefined_constants(cls):
@@ -720,6 +787,7 @@ class ViscoporoelasticModel1(FittableLaplaceModel):
         Vrtheta = self.Vrtheta;  # Not actually v, but greek nu (represents Poisson's ratio)
         Err = self.Err;
         """
+        I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         c, tau1, tau2, tg, Vrtheta, Err = self.set_fitted_parameters(
             c=c, tau1=tau1, tau2=tau2, tg=tg, Vrtheta=Vrtheta, Err=Err)
 
@@ -828,6 +896,7 @@ class ViscoporoelasticModel2(FittableLaplaceModel):
         """
         # Source: https://stackoverflow.com/questions/12191075/is-there-a-shortcut-for-self-somevariable-somevariable-in-a-python-class-con/12191118
         vars(self).update((k, v) for k, v in vars().items() if k != "self")
+        super().__init__(self)
 
     @classmethod
     def get_predefined_constants(cls):
@@ -901,6 +970,7 @@ class ViscoporoelasticModel2(FittableLaplaceModel):
         Vrtheta = self.Vrtheta;  # Not actually v, but greek nu (represents Poisson's ratio)
         Err = self.Err;
         """
+        I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         c, tau1, tau2, tg, v, t0_tg = self.set_fitted_parameters(
             c=c, tau1=tau1, tau2=tau2, tg=tg, v=v, t0_tg=t0_tg)
 
@@ -938,6 +1008,7 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
         """
         # Source: https://stackoverflow.com/questions/12191075/is-there-a-shortcut-for-self-somevariable-somevariable-in-a-python-class-con/12191118
         vars(self).update((k, v) for k, v in vars().items() if k != "self")
+        super().__init__(self)
 
     @classmethod
     def get_predefined_constants(cls):
@@ -1013,6 +1084,7 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
         Vrtheta = self.Vrtheta;  # Not actually v, but greek nu (represents Poisson's ratio)
         Err = self.Err;
         """
+        I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         c, tau1, tau2, tg, Vrtheta, Err = self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, tg=tg, Vrtheta=Vrtheta,
                                                                      Err=Err)
 
@@ -1073,6 +1145,7 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
             if return_error_inds:
                 error_inds = is_inf
             else:
+                import utils
                 (indices_is_inf, ) = np.nonzero(is_inf)
                 print(f"Warning the function could not be inverted at some ({len(indices_is_inf)}/{len(is_inf)}) values of t as the I1(sqrt(f)) component "
                       f"led to +/- infinity. The indices of these time points are {utils.abbreviate(indices_is_inf)}.")
@@ -1135,7 +1208,6 @@ class CohenModel(LaplaceModel):
 
         # Source: https://stackoverflow.com/questions/12191075/is-there-a-shortcut-for-self-somevariable-somevariable-in-a-python-class-con/12191118
         vars(self).update((k, v) for k, v in vars().items() if k != "self")
-        #vars(self).update((k, v) for k, v in kwargs.items() if k != "self")
         super().__init__()
 
     @classmethod
@@ -1190,6 +1262,7 @@ class CohenModel(LaplaceModel):
         :return:
         :rtype:
         """
+        I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
 
         delta1, delta2, delta3, C11, C12, C13, C33, C0, C1, C2 = self.get_calculable_constants()
@@ -1210,16 +1283,16 @@ class CohenModel(LaplaceModel):
         return F
 
     def characteristic_eqn(self, x):
+        I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
         return J1(x) - (1 - v31*v31*E1/E3) / (1 - v21 - 2*v31*v31*E1/E3) * x * J0(x)
 
     def setup_constants(self, bessel_len=20):
-        alpha2_vals = np.zeros(shape=bessel_len)
-        for n in range(bessel_len):
-            # Use (n+1)*pi instead of n*pi bc python is zero-indexed unlike Matlab
-            alpha = scipy.optimize.fsolve(
-                func=self.characteristic_eqn, x0=(n + 1) * np.pi)
-            alpha2_vals[n] = alpha**2
+        alpha2_vals = zeros(shape=bessel_len)
+        for n in range(1, bessel_len+1):
+            # indexed from 1 to be similar to Matlab code (n is 1,2,...bessel_len)
+            alpha = self._equation_library.fsolve(self.characteristic_eqn, n*pi)
+            alpha2_vals[n-1] = alpha**2
 
         self.alpha2_vals = alpha2_vals
         self.saved_bessel_len = bessel_len
@@ -1239,6 +1312,7 @@ class CohenModel(LaplaceModel):
         :return:
         :rtype:
         """
+        I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
 
         delta1, delta2, delta3, _, _, _, _, C0, C1, C2 = self.get_calculable_constants()
@@ -1247,7 +1321,7 @@ class CohenModel(LaplaceModel):
             self.setup_constants(bessel_len=bessel_len)
         alpha2_vals = self.alpha2_vals
 
-        #F = np.zeros(shape=np.array(t).shape )
+        #F = zeros(shape=np.array(t).shape )
         #F = E3*strain_rate*t + \
         #    E1*strain_rate*tg * (1/8 + sum(exp(-alpha2_N*t/tg)/denom for alpha2_N in alpha2_vals) )
         #F = E3*strain_rate*t - \
@@ -1326,6 +1400,7 @@ class CohenModel1998(CohenModel):
         :return:
         :rtype:
         """
+        I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         t0_tg, tg, strain_rate, E1, E3, v21, v31 = self.get_predefined_constants()
         t0 = t0_tg*tg
         delta1, delta2, delta3, C11, C12, C13, C33, C0, C1, C2 = self.get_calculable_constants()

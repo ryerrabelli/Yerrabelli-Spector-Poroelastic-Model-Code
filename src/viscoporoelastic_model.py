@@ -1232,10 +1232,10 @@ class CohenModel(LaplaceModel):
         delta2 = (1 - v31sq*E1/E3)/(1+v21)
         delta3 = (1 - 2*v31sq)*delta2/delta1
 
-        C11 = E1*(1 - v31*v31 * E1/E3) / ((1+v21) * delta1)
-        C12 = E1*(v21+v31*v31 * E1/E3) / ((1+v21) * delta1)
+        C11 = E1*(1 - v31sq * E1/E3) / ((1+v21) * delta1)
+        C12 = E1*(v21+v31sq * E1/E3) / ((1+v21) * delta1)
         C13 = E1*v31 / delta1
-        C33 = E3 * (1 + 2*v31*v31 * E1/E3 / delta1)   # C44==C31
+        C33 = E3 * (1 + 2*v31sq * E1/E3 / delta1)   # C44==C31
 
         C0 = (C11-C12)/C11
         C1 = (2*C33 + C11 + C12 - 4*C13) / (C11-C12)

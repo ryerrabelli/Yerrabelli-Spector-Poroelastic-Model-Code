@@ -362,7 +362,8 @@ def plot_laplace_analysis(funcs,  # func (funcs) can either be a function or an 
 
     if model_name is not None:
         plt.suptitle(model_name)
-        # [left, bottom, right, top] in normalized (0, 1) figure coordinates
+        # rect=[left, bottom, right, top] in normalized [0, 1] figure coordinates,
+        # default rect via fig.tight_layout() is (0, 0, 1, 1)
         fig.tight_layout(rect=[0.0, 0.0, 1.0, 0.85])
         fig.set_figheight((4*subplot_row_ct-1)/0.85)
 

@@ -239,6 +239,8 @@ class FittableLaplaceModel(LaplaceModel, abc.ABC):
 
 
 class TestModel1(LaplaceModel):
+    """ """
+
     alpha = 0.5
     tg = 7e-3
     strain_rate = 1e-4
@@ -271,16 +273,16 @@ class TestModel1(LaplaceModel):
 
 
 class TestModel2(AnalyticallyInvertableModel, FittableLaplaceModel):
-    """
-    vs = 0
-    tg = 7e3  # sec
-    Es = 7e6  # Pa
-    eps0 = 0.001
-    a = 0.003  # meters
-    alpha2_vals=None
-    A_vals=None
-    saved_bessel_len = 0
-    """
+    """ """
+    # vs = 0
+    # tg = 7e3  # sec
+    # Es = 7e6  # Pa
+    # eps0 = 0.001
+    # a = 0.003  # meters
+    # alpha2_vals=None
+    # A_vals=None
+    # saved_bessel_len = 0
+
 
     def __init__(self):
         super().__init__(self)
@@ -368,6 +370,10 @@ class TestModel2(AnalyticallyInvertableModel, FittableLaplaceModel):
 
 
 class TestModel3(TestModel2):
+    """
+    TestModel2 has the equations for *force*.
+    TestModel3 has the equations for *displacement*.
+    """
     #@staticmethod
     #def characteristic_eqn(*args, **kwargs): return TestModel2.characteristic_eqn(*args, **kwargs)
 
@@ -412,13 +418,14 @@ class TestModel3(TestModel2):
         return "unitless"  # displacement/a is m/m = unitless
 
 
-class TestModel4(FittableLaplaceModel):   # Dr. Spector sent this to me May 29, 2021
-    """
-    v = 0
-    strain_rate = 0.0003  #1e-3  # s^-1
-    t0_tg = 0.1
-    tg = 1000  #7e3  # sec
-    """
+class TestModel4(FittableLaplaceModel):
+    """Dr. Spector sent this to me May 29, 2021"""
+
+    # v = 0
+    # strain_rate = 0.0003  #1e-3  # s^-1
+    # t0_tg = 0.1
+    # tg = 1000  #7e3  # sec
+
 
     def __init__(self):
         super().__init__(self)
@@ -460,6 +467,69 @@ class TestModel4(FittableLaplaceModel):   # Dr. Spector sent this to me May 29, 
 
         # Laplace transform of the axial strain
         epszz = eps0*(1 - exp(-s*t0/tg))/(s*s)
+        f_prime = epszz * (3*I0(sqrt(s))-4*C0*I1(sqrt(s))
+                           / sqrt(s)) / (I0(sqrt(s))-C0*I1(sqrt(s))/sqrt(s))
+        return f_prime
+
+
+class ArmstrongIsotropicModel(FittableLaplaceModel):   # Aka TestModel5
+    """Dr. Spector sent this model to me May 29, 2021, then revised it on Jun 11, 2021 """
+
+    #v = 0
+    #strain_rate = 0.0003  #1e-3  # s^-1
+    #t0_tg = 0.1
+    #tg = 1000  #7e3  # sec
+
+
+    def __init__(self):
+        super().__init__(self)
+        self.v = 0
+        self.strain_rate = 1e-4  # s^-1
+        self.t0_tg = 100/7e3
+        self.tg = 7e3  # sec
+
+    @classmethod
+    def get_predefined_constants(cls):
+        # cls.v, cls.strain_rate, cls.t0_tg, cls.tg
+        return ()   # zero-length tuple
+
+    @staticmethod
+    def get_predefined_constant_names():
+        return ()   # zero-length tuple
+
+    def get_fittable_parameters(self):
+        return self.v, self.strain_rate, self.t0_tg, self.tg
+
+    @classmethod
+    def get_fittable_parameter_names(cls):
+        return "v", "strain_rate", "t0/tg", "tg"
+
+    def get_calculable_constants(self):
+        v, strain_rate, t0_tg, tg = self.get_fittable_parameters()
+        t0 = t0_tg * tg
+        eps0 = strain_rate * t0
+        C0 = (1-2*v)/(1-v)
+        return t0, eps0, C0
+
+    @staticmethod
+    def get_calculable_constant_names():
+        return "t0", "eps0", "C0"
+
+    def laplace_value(self, s):
+        """
+        Overrides super function
+        :param s:
+        :return:
+        """
+        I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
+        v, strain_rate, t0_tg, tg = self.get_fittable_parameters()
+        t0, eps0, C0 = self.get_calculable_constants()
+
+        # TODO: Confirm the TestModel4 epszz expression from Dr. Spector as this seems to be different from the one
+        #  for the viscoporoelastic model
+
+        # Laplace transform of the axial strain
+        epszz = strain_rate*tg*(1 - exp(-s*t0/tg))/(s*s)
         f_prime = epszz * (3*I0(sqrt(s))-4*C0*I1(sqrt(s))
                            / sqrt(s)) / (I0(sqrt(s))-C0*I1(sqrt(s))/sqrt(s))
         return f_prime
@@ -613,69 +683,6 @@ class ViscoporoelasticModel0(FittableLaplaceModel):
             )
 
         return sigbar
-
-
-class ArmstrongIsotropicModel(FittableLaplaceModel):   # Aka TestModel5
-    # Dr. Spector sent this model to me May 29, 2021, then revised it on Jun 11, 2021
-    """
-    v = 0
-    strain_rate = 0.0003  #1e-3  # s^-1
-    t0_tg = 0.1
-    tg = 1000  #7e3  # sec
-    """
-
-    def __init__(self):
-        super().__init__(self)
-        self.v = 0
-        self.strain_rate = 1e-4  # s^-1
-        self.t0_tg = 100/7e3
-        self.tg = 7e3  # sec
-
-    @classmethod
-    def get_predefined_constants(cls):
-        # cls.v, cls.strain_rate, cls.t0_tg, cls.tg
-        return ()   # zero-length tuple
-
-    @staticmethod
-    def get_predefined_constant_names():
-        return ()   # zero-length tuple
-
-    def get_fittable_parameters(self):
-        return self.v, self.strain_rate, self.t0_tg, self.tg
-
-    @classmethod
-    def get_fittable_parameter_names(cls):
-        return "v", "strain_rate", "t0/tg", "tg"
-
-    def get_calculable_constants(self):
-        v, strain_rate, t0_tg, tg = self.get_fittable_parameters()
-        t0 = t0_tg * tg
-        eps0 = strain_rate * t0
-        C0 = (1-2*v)/(1-v)
-        return t0, eps0, C0
-
-    @staticmethod
-    def get_calculable_constant_names():
-        return "t0", "eps0", "C0"
-
-    def laplace_value(self, s):
-        """
-        Overrides super function
-        :param s:
-        :return:
-        """
-        I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
-        v, strain_rate, t0_tg, tg = self.get_fittable_parameters()
-        t0, eps0, C0 = self.get_calculable_constants()
-
-        # TODO: Confirm the TestModel4 epszz expression from Dr. Spector as this seems to be different from the one
-        #  for the viscoporoelastic model
-
-        # Laplace transform of the axial strain
-        epszz = strain_rate*tg*(1 - exp(-s*t0/tg))/(s*s)
-        f_prime = epszz * (3*I0(sqrt(s))-4*C0*I1(sqrt(s))
-                           / sqrt(s)) / (I0(sqrt(s))-C0*I1(sqrt(s))/sqrt(s))
-        return f_prime
 
 
 class ViscoporoelasticModel1(FittableLaplaceModel):
@@ -953,6 +960,11 @@ class ViscoporoelasticModel2(FittableLaplaceModel):
 
 
 class ViscoporoelasticModel3(FittableLaplaceModel):
+    """
+    Dr. Spector first sent me these (handwritten) eqns on 2021_03_27. 2021_04_03 records have a good docx of the eqns at that time.
+    We returned to the problem 2021_06_26, 2021_07_02, 2021_07_29, and 2021_08_11 with corrections (see respective docx files for eqns).
+    We returned again with Daniel on 2022_03_17 (see 2022_03_20 docx)
+    """
     ## PARAMETERS
     ## Predefined constants
     t0_tg = 10/40.62
@@ -1048,23 +1060,23 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
 
         # print(s)
         ## BASE EQUATIONS
-        #  2 (<-1)
+        #  Eqn 2 (<-1)
         # Below lines modified from March to June 2021 versions
         t0 = t0_tg * tg
         # eps0 = strain_rate * t0
         # Laplace transform of the axial strain
         epszz = strain_rate * tg * (1 - exp(-s * t0 / tg)) / (s * s)
 
-        #  3 (<-2)
+        #  Eqn 3 (<-2)
         Srr = 1 / Err
         Srtheta = -Vrtheta / Err  # Srσ
         Srz = -Vrz / Err
         Szz = 1 / Ezz
         # Sij     = [Srr, Srtheta, Srz;   Srtheta, Srr, Srz;   Srz, Srz, Szz];
 
-        #  4 (<-3)
+        #  Eqn 4 (<-3)
         #alpha = 2 * Srz * Srz - Szz * Srtheta - Srr * Szz;
-        alpha = 2 * (Srz*Srz)*(Szz/Srr) - Srr*Srtheta - Srr*Srr
+        alpha = 2*(Srz*Srz) * (Szz/Srr) - Srr*Srtheta - Srr*Srr
         beta = 2*(Srz*Srz) * (Szz/Srr*Szz/Srr) - Szz*Srtheta - Srr*Szz
         gamma = 2*(Srz*Srz)-Szz*Srtheta-Srr*Szz
         C13 = Srz / (alpha)
@@ -1072,23 +1084,23 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
         # Note- Ehat is a function of Sij although wasn't stated in Spector's notes
         Ehat = -2 * (Srr * Szz - Srz*Srz) / (gamma)
 
-        #  5 (<-4)
+        #  Eqn 5 (<-4)
         g1 = -(2 * Srz + Szz) * (Srr - Srtheta) / (gamma)
 
-        #  6 (<-5)
+        #  Eqn 6 (<-5)
         # Note- below could be simplified bc both divided and multiplied by 2
         f1 = -Ehat * (2*Srz + Szz) / (2*gamma)
-        #  6_2 (<-6)
+        #  Eqn 6_2 (<-6)
         # Viscoelastic parameters: c, tau 1, tau 2
         f2 = 1 + c * ln((1 + s * tau2) / (1 + s * tau1))
 
-        #  7 (<-8)
+        #  Eqn 7 (<-8)
         # f      =  r0^2*s / (Ehat*k*f2(c,tau1,tau2))
         # Simplified using tg=r0^2/(Ehat*k)
         # !!Confirm should be a function of c, tau also maybe Sij or tg
         f = tg * s / f2
 
-        #  1 (<-8)
+        #  Eqn 1 (<-8)
         I1rtf = I1(sqrt(f))
         # np.isinf returns true if element is inf or -inf (does this elementwise for array)
         is_inf = np.any(np.isinf(I1rtf), axis=-1)
@@ -1126,6 +1138,7 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
                             / (2 * Ehat * I0(sqrt(f) - 2 * I1rtf_f)) \
                     );
             """
+            # !!Confirm if there should be a *2 before the I1rtf_f in the last term's numerator
             sigbar = \
                 2 * epszz * (
                             C13 * g1 * I1rtf_f

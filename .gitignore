@@ -15,3 +15,6 @@ src/__pycache__/visco*
 src/*.pyc
 src/__pycache__/*.cpython-38.pyc
 src/__pycache__/viscoporoelastic_model.cpython-38.pyc
+
+.idea/
+src-matlab/*.svn-base

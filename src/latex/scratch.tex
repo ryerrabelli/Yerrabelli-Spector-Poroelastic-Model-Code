@@ -1,0 +1,44 @@
+\documentclass{article}
+\usepackage[letterpaper,landscape, top=2cm,bottom=2cm,left=1cm,right=1cm,marginparwidth=1.75cm]{geometry}
+\usepackage{amsmath}
+
+
+\renewcommand{\Re}{\operatorname{Re}}
+\renewcommand{\Im}{\operatorname{Im}}
+
+\newcommand{\laplace}[2][]{\mathscr{L}^{#1}\left\{ #2\right\}}
+\newcommand{\L}[1]{\laplace{#1}}
+\newcommand{\ilaplace}[1]{\laplace[-1]{#1}}
+
+\newcommand{\laplaceest}[2][]{  \widehat {\large \mathscr{L}^{#1}}\big\{  #2\big\}}
+\newcommand{\ilaplaceest}[2][-1]{  \widehat {\large \mathscr{L} }^{#1}\big\{  #2\big\}}
+
+\renewcommand*{\d}{\mathop{}\!\mathrm{d}}
+\newcommand{\df}[1][]{\mathrm{d}^{#1}\,}
+\newcommand{\dd}[3][]{\frac{\d[#1] #2}{\d #3^{\ #1}}}
+\newcommand{\ddp}[3][]{\frac{\partial^{#1} #2}{\partial #3^{#1}}}
+
+\newcommand{\Io}[1]{I_0\!\left[ #1 \right]}
+\newcommand{\Ii}[1]{I_1\!\left[ #1 \right]}
+\newcommand{\I}[2][v]{I_{#1}\!\left[ #2 \right]}
+
+
+\begin{document}
+\section{Proof}
+  \begin{align}
+    f(t)&=\frac{\int_0^a \sigma'_{zz}(t) 2 \pi r \d r }{\pi a^2}    \\
+    &=\frac{2}{a^2} \int_0^a \left[ -p + C_{13} \left(\frac{\partial u}{\partial r} + \frac{u}{r} + C_{13}\varepsilon \right) \right] r \d r  \tag{8}   \\
+    \overbar{u'} &= - \frac{\overbar{\varepsilon}r'}{2} \left[ 1-\frac{\left(C'_{11}+C'_{12}-2C'_{13}\right) \frac{\Ii{\sqrt{s}}}{\sqrt{s}} }{C'_{11}\Io{\sqrt{s}} - 2 \frac{\Ii{\sqrt{s}}}{\sqrt{s}}} \right]   \tag{10}  \\
+    \overbar{p'}&=\frac{C'_{11}\left(C'_{11}+C'_{12}-2C'_{13}\right)}{2} \left[ \frac{\Io{\sqrt{s}r'} - \Io{\sqrt{s}}}{C'_{11}\Io{\sqrt{s}} - 2 \frac{\Ii{\sqrt{s}}}{\sqrt{s}}} \right]  \tag{11}
+  \end{align}
+ ----
+
+  \begin{align}
+    f(t)&=\frac{\int_0^a \sigma'_{zz}(t) 2 \pi r \d r }{\pi a^2}    \\
+    &=\frac{2}{a^2} \int_0^a \left[ -p + C_{13} \left(\frac{\partial u}{\partial r} + \frac{u}{r} + C_{13}\varepsilon \right) \right] r \d r  \tag{8}   \\
+    \overbar{u'} &= - \frac{\overbar{\varepsilon}r'}{2} \left[ 1-\frac{\left(C'_{11}+C'_{12}-2C'_{13}\right) \frac{\Ii{\sqrt{s}}}{\sqrt{s}} }{C'_{11}\Io{\sqrt{s}} - 2 \frac{\Ii{\sqrt{s}}}{\sqrt{s}}} \right]   \tag{Cohen Eqn10}  \\
+    &= -\frac{\varepsilon r'}{2} \qquad \textbf{ if } \substack{ \nu_{31}=0.5 \textbf{ so } \\ C'_{11}+C'_{12}-2C'_{13}=0 }  \\
+    \overbar{p'}&=\frac{C'_{11}\left(C'_{11}+C'_{12}-2C'_{13}\right)}{2} \left[ \frac{\Io{\sqrt{s}r'} - \Io{\sqrt{s}}}{C'_{11}\Io{\sqrt{s}} - 2 \frac{\Ii{\sqrt{s}}}{\sqrt{s}}} \right]  \tag{11}   \\
+    &= 0  \qquad \textbf{ if } \substack{ \nu_{31}=0.5 \textbf{ so } \\ C'_{11}+C'_{12}-2C'_{13}=0 }
+  \end{align}
+\end{document}

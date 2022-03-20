@@ -1194,7 +1194,7 @@ class CohenModel(LaplaceModel):
     https://doi.org/10.1115/1.2798019
 
     """
-    t0_tg = 10 / 40.62
+    t0_tg = 10 / 40.62  # unitless,  t0_tg=None indicates stepwise strain
     tg = 40.62  # sec
     strain_rate = 0.01  # per sec
     E1 = 8.5  # kPa
@@ -1268,7 +1268,14 @@ class CohenModel(LaplaceModel):
         delta1, delta2, delta3, C11, C12, C13, C33, C0, C1, C2 = self.get_calculable_constants()
 
         if eps_zz is None:
-            eps_zz = strain_rate * tg * (1 - exp(-t0_tg * s)) / (s*s)
+            if t0_tg is None:  # Stepwise strain (not ramped)
+                # Recall e^x ≈ 1+x for small x
+                # lim as t0->0 of (1 - exp(-t0_tg * s)) / (s*s)
+                # = (1- (1-t0_tg*s) )/(s*s)
+                # = ( t0_tg*s )/(s*s) = t0_tg/s
+                eps_zz = strain_rate * tg * 1/s
+            else:
+                eps_zz = strain_rate * tg * (1 - exp(-t0_tg * s)) / (s*s)
 
         #I1rts = I1(sqrt(s))
         I1rts_s = I1(sqrt(s)) / sqrt(s)
@@ -1322,60 +1329,65 @@ class CohenModel(LaplaceModel):
         alpha2_vals = self.alpha2_vals
 
         #F = zeros(shape=np.array(t).shape )
-        #F = E3*strain_rate*t + \
-        #    E1*strain_rate*tg * (1/8 + sum(exp(-alpha2_N*t/tg)/denom for alpha2_N in alpha2_vals) )
-        #F = E3*strain_rate*t - \
-        #    E1*strain_rate*tg*delta3 * \
-        #    sum((exp(-alpha2_N*t/tg)-exp(-alpha2_N*(t/tg-t0_tg)))/denom for alpha2_N in alpha2_vals)
-        #print(f"delta1/(1+v21)={delta1/(1+v21)}")
-        #print(f"E1 * strain_rate * tg * delta3={E1 * strain_rate * tg * delta3}")
+        if t0_tg is None:  # stepwise strain (not ramped)
+            F = E3 * strain_rate + E1 * strain_rate * delta3 * sum(exp(-alpha2_N*t/tg)/( delta2*delta2*alpha2_N - delta1/(1+v21) ) for alpha2_N in alpha2_vals )
 
-        """
-        F = np.where(
-            t / tg < t0_tg,
-            E3 * strain_rate * t + \
-            E1 * strain_rate * tg * delta3 *
-            (1/8 - sum(exp(-alpha2_N * t/tg) / (alpha2_N*(delta2*delta2*alpha2_N - delta1/(1+v21)))
-                       for alpha2_N in alpha2_vals
-                       )
-             ),
-            E3 * strain_rate * t0_tg*tg - \
-            E1 * strain_rate * tg * delta3 *
-            sum((exp(-alpha2_N * t/tg) - exp(-alpha2_N * (t/tg - t0_tg))) / (alpha2_N*(delta2*delta2*alpha2_N - delta1/(1+v21)))
-                for alpha2_N in alpha2_vals
+        else:
+            # Ramped strain
+            #F = E3*strain_rate*t + \
+            #    E1*strain_rate*tg * (1/8 + sum(exp(-alpha2_N*t/tg)/denom for alpha2_N in alpha2_vals) )
+            #F = E3*strain_rate*t - \
+            #    E1*strain_rate*tg*delta3 * \
+            #    sum((exp(-alpha2_N*t/tg)-exp(-alpha2_N*(t/tg-t0_tg)))/denom for alpha2_N in alpha2_vals)
+            #print(f"delta1/(1+v21)={delta1/(1+v21)}")
+            #print(f"E1 * strain_rate * tg * delta3={E1 * strain_rate * tg * delta3}")
+
+            """
+            F = np.where(
+                t / tg < t0_tg,
+                E3 * strain_rate * t + \
+                E1 * strain_rate * tg * delta3 *
+                (1/8 - sum(exp(-alpha2_N * t/tg) / (alpha2_N*(delta2*delta2*alpha2_N - delta1/(1+v21)))
+                           for alpha2_N in alpha2_vals
+                           )
+                 ),
+                E3 * strain_rate * t0_tg*tg - \
+                E1 * strain_rate * tg * delta3 *
+                sum((exp(-alpha2_N * t/tg) - exp(-alpha2_N * (t/tg - t0_tg))) / (alpha2_N*(delta2*delta2*alpha2_N - delta1/(1+v21)))
+                    for alpha2_N in alpha2_vals
+                    )
                 )
-            )
-        return F
-        """
+            return F
+            """
 
-        F = np.piecewise(t,
-                         [t/tg < 0,
-                         (t/tg >= 0) & (t/tg < t0_tg),
-                          t/tg >= t0_tg],
-                         [0,
-                             (
-                                 lambda t:
-                                 E3 * strain_rate * t
-                                 + E1 * strain_rate * tg * delta3
-                                 * (1/8 - sum(
-                                     exp(-alpha2_N * t/tg)
-                                     / (alpha2_N*(delta2*delta2*alpha2_N - delta1/(1+v21)))
-                                     for alpha2_N in alpha2_vals
-                                     )
-                                    )
-                                 ),
-                             (
-                                 lambda t:
-                                 E3 * strain_rate * t0_tg*tg
-                                 - E1 * strain_rate * tg * delta3
-                                 * sum(
-                                     (exp(-alpha2_N * t/tg)
-                                      - exp(-alpha2_N * (t/tg - t0_tg)))
-                                     / (alpha2_N*(delta2*delta2*alpha2_N - delta1/(1+v21)))
-                                     for alpha2_N in alpha2_vals
-                                     )
-                                 )]
-                         )
+            F = np.piecewise(t,
+                             [t/tg < 0,
+                             (t/tg >= 0) & (t/tg < t0_tg),
+                              t/tg >= t0_tg],
+                             [0,
+                                 (
+                                     lambda t:
+                                     E3 * strain_rate * t
+                                     + E1 * strain_rate * tg * delta3
+                                     * (1/8 - sum(
+                                         exp(-alpha2_N * t/tg)
+                                         / (alpha2_N*(delta2*delta2*alpha2_N - delta1/(1+v21)))
+                                         for alpha2_N in alpha2_vals
+                                         )
+                                        )
+                                     ),
+                                 (
+                                     lambda t:
+                                     E3 * strain_rate * t0_tg*tg
+                                     - E1 * strain_rate * tg * delta3
+                                     * sum(
+                                         (exp(-alpha2_N * t/tg)
+                                          - exp(-alpha2_N * (t/tg - t0_tg)))
+                                         / (alpha2_N*(delta2*delta2*alpha2_N - delta1/(1+v21)))
+                                         for alpha2_N in alpha2_vals
+                                         )
+                                     )]
+                             )
 
         return F
 

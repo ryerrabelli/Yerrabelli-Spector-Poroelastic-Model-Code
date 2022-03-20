@@ -548,17 +548,6 @@ class ViscoporoelasticModel0(FittableLaplaceModel):
                       Vrtheta=None,
                       Err=None,
                       ):
-        """
-        self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, time_const=time_const, Vrtheta=Vrtheta, Err=Err)
-        c = self.c;
-        tau1 = self.tau1;
-        tau2 = self.tau2;
-        # tau = [tau1, tau2];
-        # tau = [1 1];
-        time_const = self.time_const;  # in units of s   # for porosity_sp == 0.5
-        Vrtheta = self.Vrtheta;  # Not actually v, but greek nu (represents Poisson's ratio)
-        Err = self.Err;
-        """
         I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         c, tau1, tau2, tg, Vrtheta, Err = self.set_fitted_parameters(
             c=c, tau1=tau1, tau2=tau2, tg=tg, Vrtheta=Vrtheta, Err=Err)
@@ -776,17 +765,6 @@ class ViscoporoelasticModel1(FittableLaplaceModel):
                       Vrtheta=None,
                       Err=None,
                       ):
-        """
-        self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, tg=tg, Vrtheta=Vrtheta, Err=Err)
-        c = self.c;
-        tau1 = self.tau1;
-        tau2 = self.tau2;
-        # tau = [tau1, tau2];
-        # tau = [1 1];
-        tg = self.tg;  # in units of s   # for porosity_sp == 0.5
-        Vrtheta = self.Vrtheta;  # Not actually v, but greek nu (represents Poisson's ratio)
-        Err = self.Err;
-        """
         I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         c, tau1, tau2, tg, Vrtheta, Err = self.set_fitted_parameters(
             c=c, tau1=tau1, tau2=tau2, tg=tg, Vrtheta=Vrtheta, Err=Err)
@@ -959,17 +937,6 @@ class ViscoporoelasticModel2(FittableLaplaceModel):
                       v=None,
                       t0_tg=None,
                       ):
-        """
-        self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, tg=tg, Vrtheta=Vrtheta, Err=Err)
-        c = self.c;
-        tau1 = self.tau1;
-        tau2 = self.tau2;
-        # tau = [tau1, tau2];
-        # tau = [1 1];
-        tg = self.tg;  # in units of s   # for porosity_sp == 0.5
-        Vrtheta = self.Vrtheta;  # Not actually v, but greek nu (represents Poisson's ratio)
-        Err = self.Err;
-        """
         I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         c, tau1, tau2, tg, v, t0_tg = self.set_fitted_parameters(
             c=c, tau1=tau1, tau2=tau2, tg=tg, v=v, t0_tg=t0_tg)
@@ -1073,17 +1040,6 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
                       Err=None,
                       return_error_inds=False,
                       ):
-        """
-        self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, tg=tg, Vrtheta=Vrtheta, Err=Err)
-        c = self.c;
-        tau1 = self.tau1;
-        tau2 = self.tau2;
-        # tau = [tau1, tau2];
-        # tau = [1 1];
-        tg = self.tg;  # in units of s   # for porosity_sp == 0.5
-        Vrtheta = self.Vrtheta;  # Not actually v, but greek nu (represents Poisson's ratio)
-        Err = self.Err;
-        """
         I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
         c, tau1, tau2, tg, Vrtheta, Err = self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, tg=tg, Vrtheta=Vrtheta,
                                                                      Err=Err)
@@ -1192,8 +1148,8 @@ class CohenModel(LaplaceModel):
     Cohen, B., Lai, W. M., and Mow, V. C. (August 1, 1998). "A Transversely Isotropic Biphasic Model for Unconfined
     Compression of Growth Plate and Chondroepiphysis." ASME. J Biomech Eng. August 1998; 120(4): 491–496.
     https://doi.org/10.1115/1.2798019
-
     """
+
     t0_tg = 10 / 40.62  # unitless,  t0_tg=None indicates stepwise strain
     tg = 40.62  # sec
     strain_rate = 0.01  # per sec

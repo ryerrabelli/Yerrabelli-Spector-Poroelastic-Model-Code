@@ -99,12 +99,15 @@ class LaplaceModel(abc.ABC):  # inheriting from abc.ABC means that this is abstr
     def __init__(self, equation_library=None):
         self.set_equation_library(equation_library)
         super().__init__()
-        #super().__init__(self)
 
-    def set_equation_library(self,equation_library="scipy"):
-        if equation_library is not None and equation_library.lower() in ["mpmath","m"]:
+    def set_equation_library(self, equation_library="scipy"):
+        equation_library_lower = None if equation_library is None else equation_library.lower()
+        if equation_library_lower in ["mpmath","m"]:
             self._equation_library = MpmathEquations
+        elif equation_library_lower in ["scipy","s",None]:
+            self._equation_library = ScipyEquations
         else:
+            print("Warning: No equation library set for the LaplaceModel")
             self._equation_library = ScipyEquations
 
     def get_core_equations(self):
@@ -285,7 +288,7 @@ class TestModel2(AnalyticallyInvertableModel, FittableLaplaceModel):
 
 
     def __init__(self):
-        super().__init__(self)
+        super().__init__()
         self.vs = 0
         self.tg = 7e3  # sec
         self.Es = 7e6  # Pa
@@ -428,7 +431,7 @@ class TestModel4(FittableLaplaceModel):
 
 
     def __init__(self):
-        super().__init__(self)
+        super().__init__()
         self.v = 0
         self.strain_rate = 0.0003  # 1e-3  # s^-1
         self.t0_tg = 0.1
@@ -482,7 +485,7 @@ class ArmstrongIsotropicModel(FittableLaplaceModel):   # Aka TestModel5
 
 
     def __init__(self):
-        super().__init__(self)
+        super().__init__()
         self.v = 0
         self.strain_rate = 1e-4  # s^-1
         self.t0_tg = 100/7e3
@@ -546,7 +549,7 @@ class ViscoporoelasticModel0(FittableLaplaceModel):
     Ezz = 10  # Note- don't mix up Ezz with epszz
 
     def __init__(self):
-        super().__init__(self)
+        super().__init__()
         self.c = 1
         self.tau1 = 1
         self.tau2 = 1
@@ -708,7 +711,7 @@ class ViscoporoelasticModel1(FittableLaplaceModel):
         """
         # Source: https://stackoverflow.com/questions/12191075/is-there-a-shortcut-for-self-somevariable-somevariable-in-a-python-class-con/12191118
         vars(self).update((k, v) for k, v in vars().items() if k != "self")
-        super().__init__(self)
+        super().__init__()
 
     @classmethod
     def get_predefined_constants(cls):
@@ -881,7 +884,7 @@ class ViscoporoelasticModel2(FittableLaplaceModel):
         """
         # Source: https://stackoverflow.com/questions/12191075/is-there-a-shortcut-for-self-somevariable-somevariable-in-a-python-class-con/12191118
         vars(self).update((k, v) for k, v in vars().items() if k != "self")
-        super().__init__(self)
+        super().__init__()
 
     @classmethod
     def get_predefined_constants(cls):
@@ -987,7 +990,7 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
         """
         # Source: https://stackoverflow.com/questions/12191075/is-there-a-shortcut-for-self-somevariable-somevariable-in-a-python-class-con/12191118
         vars(self).update((k, v) for k, v in vars().items() if k != "self")
-        super().__init__(self)
+        super().__init__()
 
     @classmethod
     def get_predefined_constants(cls):
@@ -998,6 +1001,10 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
     def get_predefined_constant_names():
         return "t0/tg", "strain_rate", "Vrz", "Ezz"
 
+    @staticmethod
+    def get_predefined_constant_names_latex():
+        return r"t_0/t_g", r"\dot{}\varepsilon}", r"\nu_{rz}", r"E_{zz}"
+
     # This is not a static method as fitted parameters depend on the instance (note- the names are still same though)
     def get_fittable_parameters(self):
         return self.c, self.tau1, self.tau2, self.tg, self.Vrtheta, self.Err
@@ -1007,12 +1014,45 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
         return "c", "tau1", "tau2", "tg", "Vrtheta", "Err"
 
     def get_calculable_constants(self) -> tuple:
-        t0 = self.t0_tg * self.tg
-        return (t0,)    # returns tuple of length 1
+        t0_tg, strain_rate, Vrz, Ezz = self.get_predefined_constants()
+        c, tau1, tau2, tg, Vrtheta, Err = self.get_fittable_parameters()
+
+        t0 = t0_tg * tg
+        # eps0 = strain_rate * t0
+
+        #  Eqn 3 (<-2)
+        Srr = 1 / Err
+        Srtheta = -Vrtheta / Err  # Srσ
+        Srz = -Vrz / Err
+        Szz = 1 / Ezz
+        # Sij     = [Srr, Srtheta, Srz;   Srtheta, Srr, Srz;   Srz, Srz, Szz];
+
+        #  Eqn 4 (<-3)
+        #alpha = 2 * Srz * Srz - Szz * Srtheta - Srr * Szz;
+        alpha = 2*(Srz*Srz) * (Szz/Srr) - Srr*Srtheta - Srr*Srr
+        beta = 2*(Srz*Srz) * (Szz/Srr*Szz/Srr) - Szz*Srtheta - Srr*Szz
+        gamma = 2*(Srz*Srz)-Szz*Srtheta-Srr*Szz
+        C13 = Srz / (alpha)
+        C33 = -(Srr + Srtheta) / (beta)
+        # Note- Ehat is a function of Sij although wasn't stated in Spector's notes
+        Ehat = -2 * (Srr * Szz - Srz*Srz) / (gamma)
+
+        #  Eqn 5 (<-4)
+        g1 = -(2 * Srz + Szz) * (Srr - Srtheta) / (gamma)
+
+        return (t0, Srr, Srtheta, Srz, Szz, alpha, beta, gamma, C13, C33, Ehat, g1)
 
     @staticmethod
     def get_calculable_constant_names() -> tuple:
-        return ("t0",)  # returns tuple of length 1
+        return ("t0", "Srr", "Srtheta", "Srz", "Szz", "alpha", "beta", "gamma",
+                "C13", "C33", "Ehat", "g1")
+
+    @staticmethod
+    def get_calculable_constant_names_latex():
+        """The $ is not included inside the returned strings"""
+        return r"t_0", r"S_{rr}", r"S_{r\theta}", r"S_{rz}", r"S_{zz}"    \
+               r"\alpha", r"\beta", r"\gamma", r"C_{13}", r"C_{33}",  \
+               r"\hat{E}", r"g_1"
 
     def set_fitted_parameters(self,
                               ## Fitted parameters (to be determined by experimental fitting to
@@ -1053,44 +1093,22 @@ class ViscoporoelasticModel3(FittableLaplaceModel):
                       return_error_inds=False,
                       ):
         I0, I1, J0, J1, ln, exp, sqrt = self.get_core_equations()
-        c, tau1, tau2, tg, Vrtheta, Err = self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, tg=tg, Vrtheta=Vrtheta,
-                                                                     Err=Err)
-
+        c, tau1, tau2, tg, Vrtheta, Err = self.set_fitted_parameters(c=c, tau1=tau1, tau2=tau2, tg=tg, Vrtheta=Vrtheta, Err=Err)
         t0_tg, strain_rate, Vrz, Ezz = self.get_predefined_constants()
 
-        # print(s)
-        ## BASE EQUATIONS
+        #  Eqn 3-5 (<-2-4) inside here
+        t0, Srr, Srtheta, Srz, Szz, alpha, beta, gamma, C13, C33, Ehat, g1 = self.get_calculable_constants()
+
+        ### BASE EQUATIONS
         #  Eqn 2 (<-1)
-        # Below lines modified from March to June 2021 versions
-        t0 = t0_tg * tg
-        # eps0 = strain_rate * t0
+        # Below line modified from March to June 2021 versions
         # Laplace transform of the axial strain
         epszz = strain_rate * tg * (1 - exp(-s * t0 / tg)) / (s * s)
 
-        #  Eqn 3 (<-2)
-        Srr = 1 / Err
-        Srtheta = -Vrtheta / Err  # Srσ
-        Srz = -Vrz / Err
-        Szz = 1 / Ezz
-        # Sij     = [Srr, Srtheta, Srz;   Srtheta, Srr, Srz;   Srz, Srz, Szz];
-
-        #  Eqn 4 (<-3)
-        #alpha = 2 * Srz * Srz - Szz * Srtheta - Srr * Szz;
-        alpha = 2*(Srz*Srz) * (Szz/Srr) - Srr*Srtheta - Srr*Srr
-        beta = 2*(Srz*Srz) * (Szz/Srr*Szz/Srr) - Szz*Srtheta - Srr*Szz
-        gamma = 2*(Srz*Srz)-Szz*Srtheta-Srr*Szz
-        C13 = Srz / (alpha)
-        C33 = -(Srr + Srtheta) / (beta)
-        # Note- Ehat is a function of Sij although wasn't stated in Spector's notes
-        Ehat = -2 * (Srr * Szz - Srz*Srz) / (gamma)
-
-        #  Eqn 5 (<-4)
-        g1 = -(2 * Srz + Szz) * (Srr - Srtheta) / (gamma)
-
-        #  Eqn 6 (<-5)
+        #  Eqn 6a (<-5)
         # Note- below could be simplified bc both divided and multiplied by 2
         f1 = -Ehat * (2*Srz + Szz) / (2*gamma)
-        #  Eqn 6_2 (<-6)
+        #  Eqn 6b (<-6)
         # Viscoelastic parameters: c, tau 1, tau 2
         f2 = 1 + c * ln((1 + s * tau2) / (1 + s * tau1))
 

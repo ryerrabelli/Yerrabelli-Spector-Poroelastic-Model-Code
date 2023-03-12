@@ -1,0 +1,178 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifluatex
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+
+\author{}
+\date{}
+
+\begin{document}
+
+Citation: Cohen, B., Lai, W. M., \& Mow, V. C. (1998). A transversely
+isotropic biphasic model for unconfined compression of growth plate and
+chondroepiphysis.
+
+\hypertarget{section}{%
+\subsection{}\label{section}}
+
+\hypertarget{parameters}{%
+\subsection{Parameters}\label{parameters}}
+
+Choose the following parameters and compute the inversion
+
+\[E_{1} = 8.5\ kPa,\ \ E_{3} = 19\ kPa,\ \ \nu_{21} = 0.75,\ \ \nu_{31} = 0.24,\ \ \]
+
+\[t_{g} = 40.62\ sec,\ \ {\dot{\varepsilon}}_{0} = 0.01\ \sec^{- 1}\]
+
+\[\frac{t_{0}}{t_{g}} = 0.25\ \]
+
+\hypertarget{setup-equations}{%
+\subsection{Setup Equations}\label{setup-equations}}
+
+\[\mathrm{\Delta}_{1} = 1 - \nu_{21\ } - 2\upsilon_{31}^{2}\frac{E_{1}}{E_{3}}\]
+
+\(\Delta_{2}\)=\(\left( 1 - \upsilon_{31}^{2}\frac{E_{1}}{E_{3}} \right)/(1 + \nu_{21\ })\)
+
+\(\Delta_{3}\)=\((1 - 2\upsilon_{31}^{2})\frac{\Delta_{2}}{\mathrm{\Delta}_{1}}\)
+
+\[C_{11} = \frac{E_{1} \cdot \left( 1 - \upsilon_{31}^{2}\frac{E_{1\ }}{E_{3}} \right)}{\left( 1 + \upsilon_{21} \right) \cdot \Delta_{1}}\]
+
+\[C_{12} = \frac{E_{1} \cdot (\upsilon_{21} + \frac{\upsilon_{31}^{2}E_{1\ }}{E_{3}})}{\left( 1 + \upsilon_{21} \right) \cdot \Delta_{1}}\]
+
+\[C_{13} = \frac{E_{1}\upsilon_{31}}{\Delta_{1}} = \frac{E_{1}\upsilon_{31}}{1 - \nu_{21\ } - 2\upsilon_{31}^{2}\frac{E_{1}}{E_{3}}}\]
+
+\[C_{33} = E_{3} \cdot \left( 1 + \frac{2\upsilon_{31}^{2}\frac{E_{1\ }}{E_{3}}}{\Delta_{1}} \right) = \frac{E_{3}\left( \Delta_{1} + 2\upsilon_{31}^{2}\frac{E_{1\ }}{E_{3}} \right)}{\Delta_{1}} = \frac{\Delta_{1}E_{3} + 2\upsilon_{31}^{2}E_{1}}{\Delta_{1}}\]
+
+\[C_{0} = \frac{C_{11} - C_{12}}{C_{11}}\]
+
+\[C_{1} = \frac{C_{11} + C_{12} - {4C}_{13} + 2C_{33}}{C_{11} - C_{12}}\]
+
+\[C_{2} = 2 \cdot \frac{C_{33\ \ }\left( C_{11} - C_{12} \right) + C_{11}\left( C_{11} + C_{12} - {4C}_{13} \right) + 2C_{13}^{2}}{\left( C_{11} - C_{12} \right)^{2}}\]
+
+Units of \(C_{11},C_{12},\ C_{13}\) are in kPa (the same dimension as
+\(E_{1}\)and \(E_{3}\))
+
+Units of \(C_{0},C_{1},\ C_{12}\) are non-dimensional
+
+Units of \(\Delta_{0},\Delta_{1},\ \Delta_{2}\) are non-dimensional
+
+\hypertarget{laplace-solution}{%
+\subsection{Laplace Solution}\label{laplace-solution}}
+
+\[\text{\ \ }{\widetilde{\varepsilon}}_{\text{zz}} = {\dot{\varepsilon}}_{0} \cdot t_{\text{g\ }} \cdot \frac{1 - \exp\left( - s \cdot \frac{t_{0}}{t_{g}} \right)}{s^{2}}\]
+
+Finally:
+
+\(\widetilde{F(s)} = {\widetilde{\varepsilon}}_{\text{zz}} \cdot \frac{C_{1}I_{0}\left\lbrack \sqrt{s} \right\rbrack - C_{2\ } \cdot C_{0} \cdot \frac{I_{1}\left\lbrack \sqrt{s} \right\rbrack}{\sqrt{s}}}{I_{0}\left\lbrack \sqrt{s} \right\rbrack - C_{0} \cdot \frac{I_{1}\left\lbrack \sqrt{s} \right\rbrack}{\sqrt{s}}}\)
+
+\hypertarget{inversion-time-solution}{%
+\subsection{Inversion (Time) Solution}\label{inversion-time-solution}}
+
+\[f(t) = E_{3}{\dot{\varepsilon}}_{0}t + E_{1}{\dot{\varepsilon}}_{0}t_{g}\mathrm{\Delta}_{3}\left( \frac{1}{8} - \sum_{}^{}\frac{\exp\left( - \frac{\alpha_{n}^{2}t}{t_{g}} \right)}{\alpha_{n}^{2}\left\lbrack \Delta_{2}^{2}\alpha_{n}^{2} - \frac{\Delta_{1\ }}{1 + \nu_{21\ }} \right\rbrack}\text{\ } \right)\text{\ \ if\ t<}t_{0}\]
+
+\[f(t) = E_{3}{\dot{\varepsilon}}_{0}t_{0} - E_{1}{\dot{\varepsilon}}_{0}t_{g}\mathrm{\Delta}_{3}\left( \sum_{\alpha_{n}^{2}}^{}\frac{\exp\left( - \frac{\alpha_{n}^{2}t}{t_{g}} \right) - exp( - \frac{\alpha_{n}^{2}\left( t - t_{0} \right)}{t_{g}})}{\alpha_{n}^{2}\left\lbrack \Delta_{2}^{2}\alpha_{n}^{2} - \frac{\Delta_{1\ }}{1 + \nu_{21\ }} \right\rbrack} \right)\text{\ \ \ }\text{if\ t}\text{≥}t_{0}\]
+
+\hypertarget{limit-in-time-case}{%
+\subsection{Limit in Time Case}\label{limit-in-time-case}}
+
+\[\lim_{t \rightarrow \infty}{f(t)} = E_{3}{\dot{\varepsilon}}_{0}t_{0} - E_{1}{\dot{\varepsilon}}_{0}t_{g}\mathrm{\Delta}_{3}\lim_{t \rightarrow \infty}\left( \sum_{\alpha_{n}^{2}}^{}\frac{\exp\left( - \frac{\alpha_{n}^{2}t}{t_{g}} \right) - \exp\left( - \frac{\alpha_{n}^{2}\left( t - t_{0} \right)}{t_{g}} \right)}{\alpha_{n}^{2}\left\lbrack \Delta_{2}^{2}\alpha_{n}^{2} - \frac{\Delta_{1\ }}{1 + \nu_{21\ }} \right\rbrack} \right) = E_{3}{\dot{\varepsilon}}_{0}t_{0} - E_{1}{\dot{\varepsilon}}_{0}t_{g}\mathrm{\Delta}_{3}\lim_{t \rightarrow \infty}\left( \sum_{\alpha_{n}^{2}}^{}\frac{0 - 0}{\alpha_{n}^{2}\left\lbrack \Delta_{2}^{2}\alpha_{n}^{2} - \frac{\Delta_{1\ }}{1 + \nu_{21\ }} \right\rbrack} \right) = E_{3}{\dot{\varepsilon}}_{0}t_{0}\]
+
+\hypertarget{variable-manipulation-to-help-laplace-limit-derivation}{%
+\subsection{Variable Manipulation to Help Laplace Limit
+Derivation}\label{variable-manipulation-to-help-laplace-limit-derivation}}
+
+\[C_{11} - C_{12} = \frac{E_{1} \cdot \left( 1 - \upsilon_{21} - 2\upsilon_{31}^{2}\frac{E_{1\ }}{E_{3}} \right)}{\left( 1 + \upsilon_{21} \right) \cdot \Delta_{1}} = \frac{E_{1}\Delta_{1}}{{\left( 1 + \upsilon_{21}^{} \right) \cdot \Delta}_{1}} = \frac{E_{1}}{1 + v_{21}}\]
+
+\[C_{11} + C_{12} = \frac{E_{1} \cdot \left( 1 + \upsilon_{21} \right)}{\left( 1 + \upsilon_{21} \right) \cdot \Delta_{1}} = \frac{E_{1}}{\Delta_{1}}\]
+
+\[C_{11} + C_{12} - {4C}_{13} = \frac{E_{1}}{\Delta_{1}} - 4 \cdot \frac{E_{1}\upsilon_{31}}{\Delta_{1}} = \frac{E_{1} \cdot (1 - 4v_{31})}{\Delta_{1}} = \frac{E_{1} \cdot \left( 1 + \upsilon_{21} \right)(1 - 4v_{31})}{\left( 1 + \upsilon_{21} \right) \cdot \Delta_{1}}\]
+
+\[C_{11} + C_{12} - {4C}_{13} + 2C_{33} = \frac{E_{1} \cdot \left( 1 - 4v_{31} \right)}{\Delta_{1}} + 2 \cdot \frac{\Delta_{1}E_{3} + 2\upsilon_{31}^{2}E_{1}}{\Delta_{1}} = \frac{E_{1} \cdot \left( 1 - 4v_{31} \right) + 2\Delta_{1}E_{3} + 4\upsilon_{31}^{2}E_{1}}{\Delta_{1}} = \frac{E_{1} \cdot \left( 1 - 4v_{31} + 4\upsilon_{31}^{2} \right) + 2\Delta_{1}E_{3}}{\Delta_{1}}\]
+
+\[C_{0}C_{2} = \frac{C_{11} - C_{12}}{C_{11}} \cdot 2\frac{C_{33\ \ }\left( C_{11} - C_{12} \right) + C_{11}\left( C_{11} + C_{12} - {4C}_{13} \right) + 2C_{13}^{2}}{\left( C_{11} - C_{12} \right)^{2}} = 2 \cdot \frac{C_{33\ \ }\left( C_{11} - C_{12} \right) + C_{11}\left( C_{11} + C_{12} - {4C}_{13} \right) + 2C_{13}^{2}}{C_{11}\left( C_{11} - C_{12} \right)} = \frac{2C_{33}}{C_{11}} + \frac{2\left( C_{11} + C_{12} - {4C}_{13} \right)}{C_{11} - C_{12}} + \frac{4C_{13}^{2}}{C_{11}\left( C_{11} - C_{12} \right)}\]
+
+\[2C_{1} - C_{0}C_{2} = 2\frac{C_{11} + C_{12} - {4C}_{13} + 2C_{33}}{C_{11} - C_{12}} - \left( \frac{2C_{33}}{C_{11}} + \frac{2\left( C_{11} + C_{12} - {4C}_{13} \right)}{C_{11} - C_{12}} + \frac{4C_{13}^{2}}{C_{11}\left( C_{11} - C_{12} \right)} \right) = \frac{4C_{33}}{C_{11} - C_{12}} - \frac{2C_{33}}{C_{11}} - \frac{4C_{13}^{2}}{C_{11}\left( C_{11} - C_{12} \right)} = \frac{4C_{33}C_{11} - 2C_{33}\left( C_{11} - C_{12} \right) - 4C_{13}^{2}}{C_{11}\left( C_{11} - C_{12} \right)} = \frac{2C_{33}C_{11} + 2C_{33}C_{12} - 4C_{13}^{2}}{C_{11}\left( C_{11} - C_{12} \right)} = \frac{2C_{33}\left( C_{11} + C_{12} \right) - 4C_{13}^{2}}{C_{11}\left( C_{11} - C_{12} \right)}\]
+
+\[{2 - C}_{0} = 2 - \frac{C_{11} - C_{12}}{C_{11}} = \frac{C_{11} + C_{12}}{C_{11}} = \frac{\left( C_{11} + C_{12} \right)\left( C_{11} - C_{12} \right)}{C_{11}\left( C_{11} - C_{12} \right)}\]
+
+\hypertarget{limit-in-laplace-case}{%
+\subsection{Limit in Laplace Case}\label{limit-in-laplace-case}}
+
+\[\lim_{t \rightarrow \infty}{f(t)} = \lim_{s \rightarrow 0}{s \cdot F(s)} = \frac{C_{1} - \frac{C_{2} \cdot C_{0}}{2}}{1 - \frac{C_{0}}{2}} \cdot \lim_{s \rightarrow 0}{s \cdot \widetilde{\varepsilon}}_{\text{zz}} = \frac{2{\cdot C}_{1} - C_{2} \cdot C_{0}}{2 - C_{0}} \cdot \lim_{s \rightarrow 0}{s \cdot \widetilde{\varepsilon}}_{\text{zz}}\]
+
+\[\lim_{s \rightarrow 0}{s \cdot {\widetilde{\varepsilon}}_{\text{zz}}} = {\dot{\varepsilon}}_{0} \cdot t_{g} \cdot \lim_{s \rightarrow 0}\frac{1 - \exp\left( - s \cdot \frac{t_{0}}{t_{g}} \right)}{s} = {\dot{\varepsilon}}_{0}t_{g} \cdot \lim_{s \rightarrow 0}{\frac{\frac{t_{0}}{t_{g}}\exp\left( - s \cdot \frac{t_{0}}{t_{g}} \right)}{1} = {\dot{\varepsilon}}_{0}t_{g} \cdot \frac{t_{0}}{t_{g}}} = {\dot{\varepsilon}}_{0}t_{0}\]
+
+\[\lim_{s \rightarrow 0}{s \cdot F(s)} = {\dot{\varepsilon}}_{0}t_{0}\frac{2{\cdot C}_{1} - C_{2} \cdot C_{0}}{2 - C_{0}} = {\dot{\varepsilon}}_{0}t_{0}\frac{2C_{33}\left( C_{11} + C_{12} \right) - 4C_{13}^{2}}{\left( C_{11} + C_{12} \right)\left( C_{11} - C_{12} \right)} = {\dot{\varepsilon}}_{0}t_{0}\frac{2\frac{\Delta_{1}E_{3} + 2\upsilon_{31}^{2}E_{1}}{\Delta_{1}} \cdot \frac{E_{1}}{\Delta_{1}} - 4\left( \frac{E_{1}\upsilon_{31}}{\Delta_{1}} \right)^{2}}{\frac{E_{1}}{\Delta_{1}} \cdot \frac{E_{1}}{1 + v_{21}}} \cdot \frac{\Delta_{1}^{2}\left( 1 + v_{21} \right)}{\Delta_{1}^{2}\left( 1 + v_{21} \right)} = {\dot{\varepsilon}}_{0}t_{0}\left( 1 + v_{21} \right)\frac{2\left( \Delta_{1}E_{3} + 2\upsilon_{31}^{2}E_{1} \right) \cdot E_{1} - 4E_{1}^{2}\upsilon_{31}^{2}}{E_{1}^{2}\Delta_{1}} = 2{\dot{\varepsilon}}_{0}t_{0}\left( 1 + v_{21} \right)\left( \Delta_{1}\frac{E_{3}}{E_{1}} + 2\upsilon_{31}^{2} - 2\upsilon_{31}^{2} \right) \div \Delta_{1} = 2{\dot{\varepsilon}}_{0}t_{0}\left( 1 + v_{21} \right)\frac{E_{3}}{E_{1}} = {\dot{\varepsilon}}_{0}t_{0} \cdot 2\left( 1 + v_{21} \right)\frac{E_{3}}{E_{1}} = E_{3}{\dot{\varepsilon}}_{0}t_{0} \cdot \frac{2\left( 1 + v_{21} \right)}{E_{1}}\]
+
+Calculate the \underline{dimensional} value as the solution provided was
+divided by (C11-C12)/2 to be nondimensional
+
+\[\frac{C_{11} - C_{12}}{2} = \frac{E_{1}}{2\left( 1 + v_{21} \right)}\]
+
+\[\lim_{s \rightarrow 0}{s \cdot F\left( s \right) \cdot \frac{C_{11} - C_{12}}{2}} = E_{3}{\dot{\varepsilon}}_{0}t_{0} \cdot \frac{2\left( 1 + v_{21} \right)}{E_{1}} \cdot \frac{E_{1}}{2\left( 1 + v_{21} \right)} = E_{3}{\dot{\varepsilon}}_{0}t_{0}\]
+
+\hypertarget{summary}{%
+\subsection{Summary}\label{summary}}
+
+\(t \rightarrow \infty\) limit of Cohen's Laplace equation:
+
+\[\lim_{s \rightarrow 0}{s \cdot F(s)} = {\dot{\varepsilon}}_{0}t_{0} \cdot 2\left( 1 + v_{21} \right)\frac{E_{3}}{E_{1}}\]
+
+This can be dimensionalized to:
+
+\[\lim_{s \rightarrow 0}{s \cdot F\left( s \right) \cdot \frac{C_{11} - C_{12}}{2}} = E_{3}{\dot{\varepsilon}}_{0}t_{0}\]
+
+\(t \rightarrow \infty\) limit of Cohen's time-space equation:
+
+\[\lim_{t \rightarrow \infty}{f(t)} = E_{3}{\dot{\varepsilon}}_{0}t_{0}\]
+
+Therefore the inversion equation and the Laplace equation are not
+exactly equal as specified only because they were divided by different
+values to become nondimensional. Thus, their dimensional values are the
+same.
+
+\end{document}
